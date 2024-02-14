@@ -1,0 +1,195 @@
+---
+title: '<font size = 7 color = "moccasin">Flight Arrival Delays Due to Distances Between Airports</font>'
+subtitle: '<font size = 6 color = "goldenrod">Simple Linear Regression Analysis</font>'
+author: '<font size = 6 color = "darkgoldenrod1">Andrew Heneghan </font>'
+institute: '<img src = "https://azheneghan.github.io/aheneghan/images/flightdelay.png" width="190" height="150"><br>'
+date: '<font color = "skyblue" size =4> 2/7/2024 <font> <br> <font color = "white" size = 6> STA 553: Data Visualization </font>'
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    self_contained: true
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: true
+---
+
+class: middle, center
+
+# <font color = "midnightblue">Agenda</font>
+
+<font size = 5>Description of Research Question and Data</font><br>
+<font size = 5>Descriptive Statistics</font><br>
+<font size = 5>Model Diagnostics</font><br>
+<font size = 5>Results</font><br>
+<font size = 5>Scatterplot of the Variables' Relationship</font><br>
+<font size = 5>Conclusion</font><br>
+
+---
+
+class: middle, center
+
+# <font color = "midnightblue">Research Question</font>
+
+### How does the amount of distance between airports (in miles) affect the amount of time (in minutes) that a flight gets delayed before arriving at its destination?
+
+<img src = "https://azheneghan.github.io/aheneghan/images/planecleaning.png" width="250" height="220">
+
+---
+
+class: top
+
+# <center><font color = "midnightblue">Description of Data</font></center>
+
+.pull-left[
+
+- Variable information collected from various flights and airports after arrivals.
+
+- Consists of 3,593 randomly sampled flight observations and 11 variables.
+
+- The arrival delay of a certain flight (in minutes) is the dependent variable.
+
+- Independent variable is distance between airports (in miles).
+
+]
+
+.pull-right[
+
+```{r echo = FALSE}
+flying <- read.csv(file = "https://pengdsci.github.io/datasets/FlightDelay/Flight_delay-data.csv")
+```
+
+<img src = "https://azheneghan.github.io/aheneghan/images/plane.png" width="600" height="450">
+]
+
+---
+
+class: top
+
+# <center><font color = "midnightblue">Descriptive Statistics</font></center>
+
+.pull-left[
+
+```{r echo = FALSE, fig.width=4, fig.height=4}
+hist(flying$Arr_Delay)
+```
+
+]
+
+.pull-right[
+
+```{r echo = FALSE, fig.width=4, fig.height=4}
+hist(flying$Airport_Distance)
+```
+
+]
+
+- Distribution of the response (Arr_Delay) and predictor (Airport_Distance) variable appears symmetrical and unimodal, with no apparent outliers. 
+
+- The histogram of the response helps support that the assumption of normality is not violated.
+
+---
+
+class: top
+
+# <center><font color = "midnightblue">Model Diagnostics</font></center>
+
+.pull-left[
+
+```{r echo = FALSE, fig.align='center', fig.width=8, fig.height=10}
+#housing$lnmedianvalue <- log(housing$median_house_value)
+slr.delay <- lm(Arr_Delay ~ Airport_Distance, data = flying)
+par(mfrow = c(2, 2))
+plot(slr.delay)
+```
+
+]
+
+.pull-right[
+
+- All observations are sampled randomly and independently of one another.
+
+- The predictor variable, distance between airports, is linearly correlated with flight arrival delay time (in minutes).
+
+- There is one apparent outlier (Obs. 2366) in the data. This flight observation has a value of 176 minutes.
+
+]
+
+---
+
+class: top
+
+# <center><font color = "midnightblue">Model Diagnostics Cont'd</font></center>
+
+.pull-left[
+
+```{r echo = FALSE, fig.align='center', fig.width=8, fig.height=10}
+#housing$lnmedianvalue <- log(housing$median_house_value)
+slr.delay <- lm(Arr_Delay ~ Airport_Distance, data = flying)
+par(mfrow = c(2, 2))
+plot(slr.delay)
+```
+
+]
+
+.pull-right[
+
+- The lines on the Residuals vs Fitted and Scale-Location graphs are very close to horizontal. Points on these graphs are evenly and randomly spread around them as well, and the line for the Residuals vs Fitted graph is at 0. Therefore, the relationship of the residuals is linear and there is homogeneity of variances.
+
+- Pretty much all of the points on the Normal QQ plot are on the line. Therefore, the residuals are normally distributed.
+
+]
+
+---
+
+class: middle, center
+
+# <center><font color = "midnightblue">Results</font></center>
+
+```{r echo = FALSE, align='center', width=3, height=3}
+summary.slr.delay = summary(slr.delay)$coef
+knitr::kable(summary.slr.delay, caption = "Summary of simple linear regression model")
+```
+
+- The slope of the distance variable equals 0.820855. 
+
+- Distance between airports (in miles) is positively associated with flight arrival delay time (in minutes). 
+
+- As distance between airports increases by 1 mile, the amount of time that a flight gets delayed before arriving at its destination increases by 0.820855 minutes.
+
+- The p-value is 0, so we can say there is evidence to conclude that the amount of time (in minutes) that a flight gets delayed before arriving is affected by distance between airports.
+
+
+---
+
+class: middle, center
+
+# <center><font color = "midnightblue">Scatterplot</font></center>
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=5}
+library(tidyverse)
+delay.graph<-ggplot(flying, aes(x=Airport_Distance, y=Arr_Delay))+
+                     geom_point()
+delay.graph <- delay.graph + geom_smooth(method="lm", col="red")
+delay.graph
+```
+
+- Scatterplot visually displays positively association between distance between airports (in miles) and flight arrival delay time (in minutes). 
+
+- Slope of the regression line for this scatterplot, 0.820855, is same slope from the previous simple linear regression model.
+
+---
+
+class: middle, center
+
+# <center><font color = "midnightblue">Conclusion</font></center>
+
+- We aimed to see how the amount of distance between airports (in miles) affects the amount of time (in minutes) that a flight gets delayed before arriving at its destination. 
+
+- The diagnostics of the simple linear regression model appeared to have been met, so the model was not transformed.
+
+- Distance between airports (in miles) proved to have a significant, positive relationship with flight arrival delay time (in minutes).
+
+- As distance between airports increases by 1 mile, the amount of time that a flight gets delayed before arriving at its destination increases by 0.820855 minutes.
+
+- From this analysis, it can be said that putting airports closer to each other, or connecting flights to closer airports, would be beneficial in decreasing the amount of time lost when getting a flight to arrive at its destination on time.
