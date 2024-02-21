@@ -1,0 +1,231 @@
+---
+title: "Penguin Size Scatterplot"
+author: "Andrew Heneghan"
+date: "2/14/2023"
+output:
+  html_document:
+    toc: no
+    toc_float: no
+    number_sections: yes
+    toc_collapsed: no
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+<style type="text/css">
+
+/* Table of content - navigation */
+
+div#TOC li {
+    list-style:none;
+    background-color:lightgray;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #780c0c;
+}
+
+/* Title fonts */
+
+h1.title {
+  font-size: 24px;
+  color: darkblue;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant-caps: normal;
+}
+
+h4.author {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: navy;
+  text-align: center;
+}
+
+h4.date {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: darkblue;
+  text-align: center;
+}
+
+/* Section headers */
+
+h1 {
+    font-size: 22px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h2 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h3 {
+    font-size: 15px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h4 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+/* Decoration of hyperlinks  */
+
+/* unvisited link */
+a:link {
+  color: green;
+}
+
+/* visited link */
+a:visited {
+  color: purple;
+}
+
+/* mouse over link */
+a:hover {
+  color: red;
+}
+
+/* selected link */
+a:active {
+  color: yellow;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+options(repos = list(CRAN="http://cran.rstudio.com/"))
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+   library(tidyverse)
+}
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("cowplot")) {
+   install.packages("cowplot")
+   library(cowplot)
+}
+if (!require("latex2exp")) {
+   install.packages("latex2exp")
+   library(latex2exp)
+}
+if (!require("plotly")) {
+   install.packages("plotly")
+   library(plotly)
+}
+if (!require("gapminder")) {
+   install.packages("gapminder")
+   library(gapminder)
+}
+if (!require("png")) {
+    install.packages("png")             # Install png package
+    library("png")
+}
+if (!require("RCurl")) {
+    install.packages("RCurl")             # Install RCurl package
+    library("RCurl")
+}
+if (!require("colourpicker")) {
+    install.packages("colourpicker")              
+    library("colourpicker")
+}
+if (!require("gganimate")) {
+    install.packages("gganimate")              
+    library("gganimate")
+}
+if (!require("gifski")) {
+    install.packages("gifski")              
+    library("gifski")
+}
+if (!require("magick")) {
+    install.packages("magick")              
+    library("magick")
+}
+if (!require("grDevices")) {
+    install.packages("grDevices")              
+    library("grDevices")
+}
+if (!require("jpeg")) {
+    install.packages("jpeg")              
+    library("jpeg")
+}
+if (!require("VGAM")) {
+    install.packages("VGAM")              
+    library("VGAM")
+}
+if (!require("MASS")) {
+    install.packages("MASS")              
+    library("MASS")
+}
+if (!require("nnet")) {
+    install.packages("nnet")              
+    library("nnet")
+}
+if (!require("cluster")) {
+    install.packages("cluster")              
+    library("cluster")
+}
+
+knitr::opts_chunk$set(echo = TRUE,       
+                      warning = FALSE,   
+                      result = TRUE,   
+                      message = FALSE,
+                      comment = NA)
+```
+
+```{r fig.align='center'}
+penguins <- na.omit(read.csv(file="https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/w03-penguins.csv"))
+penguin.img <- "https://azheneghan.github.io/aheneghan/images/penguin.jpeg"
+my.penguin <- readJPEG(readBin(penguin.img, "raw", 1e6))
+raster.penguin <- as.raster(my.penguin)
+##
+bill.length = penguins$bill_length_mm
+flipper.length = penguins$flipper_length_mm
+body.mass = penguins$body_mass_g
+pspecies = penguins$species
+##
+adelie.id = which(pspecies=="Adelie")
+gentoo.id = which(pspecies=="Gentoo")
+chinstrap.id = which(pspecies=="Chinstrap")
+##
+if (exists("rasterImage")) {
+plot(bill.length, flipper.length, main = "Penguin Bill Length vs Flipper Length", type = "n")
+##
+points(bill.length[adelie.id], flipper.length[adelie.id],
+       pch = 19, col = "indianred2", cex = 2*(body.mass/max(body.mass))[adelie.id], alpha = 0.6)
+points(bill.length[gentoo.id], flipper.length[gentoo.id],
+       pch = 19, col = "orange", cex = 2*(body.mass/max(body.mass))[gentoo.id], alpha = 0.6)
+points(bill.length[chinstrap.id], flipper.length[chinstrap.id],
+       pch = 19, col = "purple4", cex = 2*(body.mass/max(body.mass))[chinstrap.id], alpha = 0.6)
+legend("topleft", c("Adelie", "Gentoo", "Chinstrap"),
+                  col=c("indianred2", "orange", "purple4"),
+                  pch=c(19, 19, 19),
+                  bty = "n")
+##
+rasterImage(raster.penguin, xleft = 57, ybottom = 185, xright = 60, ytop = 222)
+text(56, 173, "Point size is proportional to body mass", col = "navyblue", cex = 0.6)
+}
+```
+
+This scatterplot was made to look at the relationship between changes observed in bill length and flipper length (both in millimeters) of adult foraging penguins near Palmer Station, Antarctica. Some data observations were removed before constructing the scatterplot as they had at least one missing value for at least one variable in the analysis. The three different colors of the points represent the species of penguin each individual penguin belongs to. The size of the data points represent the body mass (in grams) of the individual penguins. Overall, it appeared that all the data points, across the three species, together form a moderately linear pattern. As bill length of a penguin increases, their flipper length will increase as well. Ihe Gentoo species tended to have larger body masses and longer flipper lengths compared to the other two species. Also, bill length of the Adelie species tended to be a lot shorter than the other two species, which were relatively the same.
