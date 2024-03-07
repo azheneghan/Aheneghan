@@ -1,0 +1,308 @@
+---
+title: "World Life Expectancy Interactive and Animated Scatterplots"
+author: "Andrew Heneghan"
+date: "3/6/2024"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+<style type="text/css">
+
+/* Table of content - navigation */
+
+div#TOC li {
+    list-style:none;
+    background-color:lightgray;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #780c0c;
+}
+
+/* Title fonts */
+
+h1.title {
+  font-size: 24px;
+  color: darkblue;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant-caps: normal;
+}
+
+h4.author {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: navy;
+  text-align: center;
+}
+
+h4.date {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: darkblue;
+  text-align: center;
+}
+
+/* Section headers */
+
+h1 {
+    font-size: 22px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h2 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h3 {
+    font-size: 15px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h4 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+/* Decoration of hyperlinks  */
+
+/* unvisited link */
+a:link {
+  color: green;
+}
+
+/* visited link */
+a:visited {
+  color: purple;
+}
+
+/* mouse over link */
+a:hover {
+  color: red;
+}
+
+/* selected link */
+a:active {
+  color: yellow;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+
+# code chunk specifies whether the R code, warnings, and output
+# will be included in the output files.
+
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+   library(tidyverse)
+}
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("dplyr")) {
+   install.packages("dplyr")
+   library(dplyr)
+}
+if (!require("cowplot")) {
+   install.packages("cowplot")
+   library(cowplot)
+}
+if (!require("latex2exp")) {
+   install.packages("latex2exp")
+   library(latex2exp)
+}
+if (!require("plotly")) {
+   install.packages("plotly")
+   library(plotly)
+}
+if (!require("gapminder")) {
+   install.packages("gapminder")
+   library(gapminder)
+}
+if (!require("png")) {
+    install.packages("png")
+    library("png")
+}
+if (!require("RCurl")) {
+    install.packages("RCurl")
+    library("RCurl")
+}
+if (!require("colourpicker")) {
+    install.packages("colourpicker")             
+    library("colourpicker")
+}
+if (!require("gganimate")) {
+    install.packages("gganimate")             
+    library("gganimate")
+}
+if (!require("gifski")) {
+    install.packages("gifski")             
+    library("gifski")
+}
+if (!require("magick")) {
+    install.packages("magick")             
+    library("magick")
+}
+if (!require("grDevices")) {
+    install.packages("grDevices")             
+    library("grDevices")
+}
+if (!require("jpeg")) {
+    install.packages("jpeg")             
+    library("jpeg")
+}
+if (!require("VGAM")) {
+    install.packages("VGAM")             
+    library("VGAM")
+}
+if (!require("MASS")) {
+    install.packages("MASS")             
+    library("MASS")
+}
+if (!require("nnet")) {
+    install.packages("nnet")             
+    library("nnet")
+}
+if (!require("cluster")) {
+    install.packages("cluster")             
+    library("cluster")
+}
+
+knitr::opts_chunk$set(echo = TRUE,       
+                      warning = FALSE,   
+                      result = TRUE,   
+                      message = FALSE,
+                      comment = NA)
+```
+
+```{r}
+LifeExpIncom <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/LifeExpIncom.csv")
+data2015 <- LifeExpIncom %>%
+  filter(year == "2015")
+```
+
+# Interactive Scatterplot of Life Expectancy vs. Income in 2015
+
+```{r}
+cols1 <- c("#648FFF","darkorchid3","#DC267F","#FE6100","#FFB000")
+cols1 <- setNames(cols1, c("Africa", "Americas", "Asia", "Europe", "Oceania"))
+
+plot_ly(
+    data = data2015,
+    x = ~income, y = ~life.expectancy, color = ~factor(region), colors = cols1,
+        text = ~paste("Country: ", country,
+                   "<br>Population Size: ", population.size),
+     ## using the following hovertemplate() to add the information of the
+     ## Two numerical variables to the hover text.
+     hovertemplate = paste('<i><b>Life Expectancy<b></i>: %{y}',
+                           '<br><b>Income</b>: %{x}',
+                           '<br><b>%{text}</b>'),
+     alpha = 0.6,
+     marker = list(size = ~population.size^(1/10), sizeref = .05, sizemode = 'area'),
+     type = "scatter",
+     mode = "markers",
+     ## graphic size
+     width = 700,
+     height = 500
+   ) %>%
+    layout(  
+      ### Title 
+      title =list(text = "Association Between Life Expectancy and Income", 
+                  font = list(family = "Arial", 
+                                size = 18,
+                               color = "blue")), 
+      ### legend
+      legend = list(title = list(text = 'Region',
+                                 font = list(family = "Courier New",
+                                               size = 14,
+                                              color = "black")),
+                    bgcolor = "beige",
+                    bordercolor = "navy",
+                    groupclick = "togglegroup",
+                    orientation = "v"
+                    ),
+      margin = list(
+              b = 100,
+              l = 100,
+              t = 100,
+              r = 50
+      ),
+      ## Background
+      plot_bgcolor ='#f7f7f7', 
+      ## Axes labels
+            xaxis = list( 
+                    title=list(text = 'Income',
+                               font = list(family = 'Arial')),
+                    zerolinecolor = 'white', 
+                    zerolinewidth = 2, 
+                    gridcolor = 'white'), 
+            yaxis = list( 
+                    title=list(text = 'Life Expectancy',
+                               font = list(family = 'Arial')),
+                    zerolinecolor = 'white', 
+                    zerolinewidth = 2, 
+                    gridcolor = 'white',
+                    range=c(48,85)),
+       ## annotations
+       annotations = list(  
+                     x = 0.7,   # between 0 and 1. 0 = left, 1 = right
+                     y = 1.5,   # between 0 and 1, 0 = bottom, 1 = top
+                  font = list(size = 12,
+                              color = "navy"),   
+                  text = "The point size is proportional to country's population size",   
+                  xref = "paper",  # "container" spans the entire `width` of the 
+                                   #  lot. "paper" refers to the width of the 
+                                   #  plotting area only. yref = "paper",  
+                                   #  same as xref.
+               xanchor = "center", #  horizontal alignment with respect to its x position
+               yanchor = "bottom", #  similar to xanchor  
+             showarrow = FALSE)
+    )
+```
+
+This scatterplot uses income and life expectancy of each country during the year of 2015 as the two variables defining the axes. Therefore, they will be the variables to be compared. The size of each point represents that country's population size during the year 2015. The color of each point represents the region or continent in which each country resides. During the year 2015, it seemed like over half the countries had low incomes below $30,000, especially those in Africa. Most African countries also had the lowest life expectancies. Those with larger incomes tended to be in Asia and Europe. The common pattern here is that life expectancy tended to increase only if income increased as well. This demonstrates that countries, and those who live in them, need a relatively large yearly income and number of resources in order for those living in these countries to live longer lives. Unfortunately, that is the opposite case with Africa, who tend to have countries with low income and, therefore, lower life expectancies. It should also be said that life expectancy seems to level out between 75 and 85 years when countries have incomes of $30,000 or greater.
+
+
+# Animated Scatterplot of Life Expectancy vs. Income Over the Years
+
+```{r}
+cols1 = c("#648FFF","darkorchid3","#DC267F","#FE6100","#FFB000","#882255")
+lifeExp.anime <- ggplot(LifeExpIncom, aes(income, life.expectancy, 
+                  size = population.size, colour = region)) +
+           geom_point(alpha = 0.7) +
+           scale_colour_manual(values = country_colors) +
+           scale_size(range = c(2, 12)) + scale_x_log10() +
+           labs(title = 'Year: {frame_time}', 
+                    x = 'Income',
+                    y = 'Life Expectancy') +
+           transition_time(year) +
+           ease_aes('linear') + scale_color_manual(values = cols1)
+###
+animate(lifeExp.anime, fps=3, duration = 20, renderer = gifski_renderer())
+```
+
+This scatterplot uses income and life expectancy of each country between 1800 and 2018 as the two variables defining the axes. Therefore, they will be the variables to be compared. The size of each point represents that country's population size. The color of each point represents the region or continent in which each country resides. From 1800 to 2018, it is seems apparent that income and life exxpectancy in all countries increased over time. Life expectancy seems to increase over time as income does as well. Income and life expectancy seemed to increase faster over the years for countries in Europe compared to other countries in other regions. On the other hand, countries in Africa had their income and life expectancies increase much slower compared to other regions. Most African countries had the lowest life expectancies of all for most years. Also, the speed of income and life expectancy for Asian countries over the years seemed to be mostly in between the speeds for European and African countries as already mentioned.
