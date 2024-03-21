@@ -1,0 +1,317 @@
+---
+title: "Gas Station and Philly 2023 Crime Data Interactive Maps"
+author: "Andrew Heneghan"
+date: "3/20/2024"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+<style type="text/css">
+
+/* Table of content - navigation */
+
+div#TOC li {
+    list-style:none;
+    background-color:lightgray;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #780c0c;
+}
+
+/* Title fonts */
+
+h1.title {
+  font-size: 24px;
+  color: darkblue;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant-caps: normal;
+}
+
+h4.author {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: navy;
+  text-align: center;
+}
+
+h4.date {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: darkblue;
+  text-align: center;
+}
+
+/* Section headers */
+
+h1 {
+    font-size: 22px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h2 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h3 {
+    font-size: 15px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h4 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+/* Decoration of hyperlinks  */
+
+/* unvisited link */
+a:link {
+  color: green;
+}
+
+/* visited link */
+a:visited {
+  color: purple;
+}
+
+/* mouse over link */
+a:hover {
+  color: red;
+}
+
+/* selected link */
+a:active {
+  color: yellow;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+   library(tidyverse)
+}
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("plotly")) {
+   install.packages("plotly")
+   library(plotly)
+}
+if (!require("gapminder")) {
+   install.packages("gapminder")
+   library(gapminder)
+}
+if (!require("RCurl")) {
+    install.packages("RCurl")             # Install RCurl package
+    library("RCurl")
+}
+if (!require("colourpicker")) {
+    install.packages("colourpicker")              
+    library("colourpicker")
+}
+if (!require("gganimate")) {
+    install.packages("gganimate")              
+    library("gganimate")
+}
+if (!require("gifski")) {
+    install.packages("gifski")              
+    library("gifski")
+}
+if (!require("magick")) {
+    install.packages("magick")              
+    library("magick")
+}
+if (!require("grDevices")) {
+    install.packages("grDevices")              
+    library("grDevices")
+}
+if (!require("leaflet")) {
+    install.packages("leaflet")              
+    library("leaflet")
+}
+if (!require("maps")) {
+    install.packages("maps")              
+    library("maps")
+}
+if (!require("htmltools")) {
+    install.packages("htmltools")              
+    library("htmltools")
+}
+if (!require("htmlwidgets")) {
+    install.packages("htmlwidgets")              
+    library("htmlwidgets")
+}
+if (!require("leaflegend")) {
+    install.packages("leaflegend")              
+    library("leaflegend")
+}
+if (!require("geojsonio")) {
+    install.packages("geojsonio")              
+    library("geojsonio")
+}
+if (!require("stringi")) {
+    install.packages("stringi")              
+    library("stringi")
+}
+if (!require("RColorBrewer")) {
+    install.packages("RColorBrewer")              
+    library("RColorBrewer")
+}
+if (!require("tigris")) {
+    install.packages("tigris")              
+    library("tigris")
+}
+if (!require("leafpop")) {
+    install.packages("leafpop")              
+    library("leafpop")
+}
+if (!require("leafem")) {
+    install.packages("leafem")              
+    library("leafem")
+}
+if (!require("tmap")) {
+    install.packages("tmap")              
+    library("tmap")
+}
+if (!require("tmaptools")) {
+    install.packages("tmaptools")              
+    library("tmaptools")
+}
+if (!require("webshot2")) {
+    install.packages("webshot2")              
+    library("webshot2")
+}
+if (!require("sf")) {
+    install.packages("sf")              
+    library("sf")
+}
+if (!require("terra")) {
+    install.packages("terra")              
+    library("terra")
+}
+if (!require("leafpop")) {
+    install.packages("leafpop")              
+    library("leafpop")
+}
+
+##
+knitr::opts_chunk$set(echo = TRUE,       
+                      warning = FALSE,   
+                      result = TRUE,   
+                      message = FALSE,
+                      comment = NA)
+```
+
+# Gas Station Data Interactive Map
+
+```{r}
+GasStation <- na.omit(read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/POC.csv"))
+rs.gs <- GasStation[sample(nrow(GasStation), size=500), ]
+###
+g <- list(      scope = 'usa',
+           projection = list(type = 'albers usa'),
+             showland = TRUE,
+            landcolor = toRGB("gray95"),
+         subunitcolor = toRGB("gray85"),
+         countrycolor = toRGB("gray85"),
+         countrywidth = 0.5,
+         subunitwidth = 0.5
+       )
+###
+gs.map <- plot_geo(rs.gs, lat = ~ycoord, lon = ~xcoord) %>% 
+  add_markers(text = ~paste(paste("State:", STATE), 
+                            paste("County:", county), 
+                            paste("Address:", ADDRESS), 
+                            paste("Zip Code:", ZIPnew), 
+                            sep = "<br>"),
+              color = ~description, 
+              symbol = "circle", 
+              hoverinfo = "text")   %>% 
+  #colorbar(title = "Incoming flights<br>2011.2")  %>% 
+  layout( title = 'Gas Stations in the United States', 
+          geo = g)
+gs.map
+```
+
+A plotly interactive scatter map was created to plot locations of sampled gas stations across the United States. It seems that a great number of the gas stations in the sample and overall population come from eastern Texas, the coasts of California, and Florida. More gas stations sampled across the U.S. are in the eastern half of the country compared to the western half. It should also be said that the U.S. states in the far northern and mid-western (Utah, Nebraska, Colorado, Wyoming) regions of the country have few to no gas stations that were sampled. This may imply there are not as many gas stations in the northern and mid-western states as in other states. This could be because human population sizes in those states are smaller compared to states with more gas stations. The number of gas stations in a state coud be proportional to population size of that state. As population size increases in a state, so do the number of gas stations. Gas stations sampled along the western and upper eastern coasts of the U.S. tended to all be from urban settings. The few gas stations sampled in the northern states appear to be in rural settings.
+
+
+# Philly 2023 Crime Data Interactive Map
+
+```{r}
+PhillyCrime <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/PhillyCrimeSince2015.csv")
+PhillyCrime$date <- as.POSIXct(PhillyCrime$date, format = "%m/%d/%Y %H:%M")
+PhillyCrime$year <- format(PhillyCrime$date, format="%Y")
+crime.2023 <- PhillyCrime %>%
+  filter(year == "2023")
+crime.2023 <- na.omit(crime.2023)
+###
+title <- tags$div(
+  HTML('<font color = "chocolate" size =4><b>Philadelphia Crime Case Locations 2023</b></font>')
+  )
+AnnotateWrapper <- tags$div(
+   HTML('<center><img border="0" alt="ImageTitle" src="https://raw.githubusercontent.com/azheneghan/aheneghan/main/images/philadelphia.png" width="150" height="100"><center>
+    <font color = "darkgreen">2023</font>')
+ )
+fatalColor <- rep("#DC267F")
+fatalColor[which(crime.2023$fatal=="Nonfatal")] <- "#648FFF"
+fatalColor[which(crime.2023$fatal=="Fatal")] <- "#DC267F"
+##
+label.msg <- paste(paste("Street:", crime.2023$street_name),
+                   paste("<br> ZIP Code:", crime.2023$zip_code),
+                   paste("<br> Neighborhood:", crime.2023$neighborhood),
+                   paste("<br> Longitude:", crime.2023$lng),
+                   paste("<br> Latitude:", crime.2023$lat))
+##
+leaflet(crime.2023) %>%
+  addTiles() %>% 
+  setView(lng=mean(crime.2023$lng), lat=mean(crime.2023$lat), zoom = 13) %>%
+  addProviderTiles(providers$Esri.WorldGrayCanvas) %>%
+  addCircleMarkers(
+            ~lng, 
+            ~lat,
+            color = fatalColor,
+            stroke = FALSE, 
+            fillOpacity = 0.4,
+            popup = ~label.msg,
+            label = ~paste("Street:", crime.2023$street_name))  %>%
+  addLegend(position = "bottomright", 
+            colors = c("#DC267F", "#648FFF"),
+            labels= c("Fatal", "Non-Fatal"),
+            title= "Crime Status",
+            opacity = 0.4) %>%
+  addControl(title, position = "topright") %>%
+  addControl(AnnotateWrapper, position = "bottomleft")
+```
+
+An interactive leaflet map was created to plot locations of crimes that took place in Philadelphia, PA in 2023. Crimes were marked with different colors to represent crimes that were fatal and crimes that weren't. Other relevant location information for each crime in 2023, such as the street and neighborhood where they were, is included in a popup (click each point).
+
+Most of the points themselves appear to be mainly in two large clusters on either side of the river while the others are lower down the river or even more right of the cluster on the right side of the river. There does not appear to be too much variation or any obvious patterns in spread of fatal and non-fatal crimes across Philadelphia in 2023. Most of the fatal and non-fatal crime locations seem to be relatively close to one another. Some points, whether fatal or non-fatal, tend to overlap since some crimes have more than one victim or criminal. Non-fatal crimes seem to be more frequent compared to fatal crimes, and only a few non-fatal crimes tend to stretch out past the aforementioned clusters.
