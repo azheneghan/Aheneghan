@@ -1,0 +1,410 @@
+---
+title: "Philly Shooting Data and Presidential Data Interactive Maps"
+author: "Andrew Heneghan"
+date: "3/27/2024"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+<style type="text/css">
+
+/* Table of content - navigation */
+
+div#TOC li {
+    list-style:none;
+    background-color:lightgray;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #780c0c;
+}
+
+/* Title fonts */
+
+h1.title {
+  font-size: 24px;
+  color: darkblue;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant-caps: normal;
+}
+
+h4.author {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: navy;
+  text-align: center;
+}
+
+h4.date {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: darkblue;
+  text-align: center;
+}
+
+/* Section headers */
+
+h1 {
+    font-size: 22px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h2 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h3 {
+    font-size: 15px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h4 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+/* Decoration of hyperlinks  */
+
+/* unvisited link */
+a:link {
+  color: green;
+}
+
+/* visited link */
+a:visited {
+  color: purple;
+}
+
+/* mouse over link */
+a:hover {
+  color: red;
+}
+
+/* selected link */
+a:active {
+  color: yellow;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+   library(tidyverse)
+}
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("plotly")) {
+   install.packages("plotly")
+   library(plotly)
+}
+if (!require("gapminder")) {
+   install.packages("gapminder")
+   library(gapminder)
+}
+if (!require("RCurl")) {
+    install.packages("RCurl")
+    library("RCurl")
+}
+if (!require("colourpicker")) {
+    install.packages("colourpicker")              
+    library("colourpicker")
+}
+if (!require("gganimate")) {
+    install.packages("gganimate")              
+    library("gganimate")
+}
+if (!require("gifski")) {
+    install.packages("gifski")              
+    library("gifski")
+}
+if (!require("magick")) {
+    install.packages("magick")              
+    library("magick")
+}
+if (!require("grDevices")) {
+    install.packages("grDevices")              
+    library("grDevices")
+}
+if (!require("leaflet")) {
+    install.packages("leaflet")              
+    library("leaflet")
+}
+if (!require("maps")) {
+    install.packages("maps")              
+    library("maps")
+}
+if (!require("htmltools")) {
+    install.packages("htmltools")              
+    library("htmltools")
+}
+if (!require("htmlwidgets")) {
+    install.packages("htmlwidgets")              
+    library("htmlwidgets")
+}
+if (!require("leaflegend")) {
+    install.packages("leaflegend")              
+    library("leaflegend")
+}
+if (!require("geojsonio")) {
+    install.packages("geojsonio")              
+    library("geojsonio")
+}
+if (!require("stringi")) {
+    install.packages("stringi")              
+    library("stringi")
+}
+if (!require("RColorBrewer")) {
+    install.packages("RColorBrewer")              
+    library("RColorBrewer")
+}
+if (!require("tigris")) {
+    install.packages("tigris")              
+    library("tigris")
+}
+if (!require("leafpop")) {
+    install.packages("leafpop")              
+    library("leafpop")
+}
+if (!require("leafem")) {
+    install.packages("leafem")              
+    library("leafem")
+}
+if (!require("tmap")) {
+    install.packages("tmap")              
+    library("tmap")
+}
+if (!require("tmaptools")) {
+    install.packages("tmaptools")              
+    library("tmaptools")
+}
+if (!require("webshot2")) {
+    install.packages("webshot2")              
+    library("webshot2")
+}
+if (!require("sf")) {
+    install.packages("sf")              
+    library("sf")
+}
+if (!require("terra")) {
+    install.packages("terra")              
+    library("terra")
+}
+if (!require("leafpop")) {
+    install.packages("leafpop")              
+    library("leafpop")
+}
+
+##
+knitr::opts_chunk$set(echo = TRUE,       
+                      warning = FALSE,   
+                      result = TRUE,   
+                      message = FALSE,
+                      comment = NA)
+```
+
+# Philly Shooting Data Reference Map
+
+```{r}
+phillyNeighbor  <- st_read("https://pengdsci.github.io/STA553VIZ/w08/Neighborhoods_Philadelphia.geojson")
+phillyNeighborShooting <- na.omit(st_read("https://pengdsci.github.io/STA553VIZ/w08/PhillyShootings.geojson"))
+
+##map title
+title <- tags$div(
+   HTML('<img border="0" alt="ImageTitle" src="https://raw.githubusercontent.com/azheneghan/aheneghan/main/images/phillyShootTitle.png" width="200" height="45">')
+ ) 
+
+## color palette
+pal <- colorFactor(c("#DC267F", "blue"), domain = c("1", "0"))
+
+## Define objects with geo-coordinate system to plot specific information
+pnt = st_as_sf(data.frame(x = -75.1256, y = 40.0063),
+                coords = c("x", "y"),
+                crs = 4326)
+mortal = st_as_sf(data.frame(x = -75.3277, y = 39.9168),
+                coords = c("x", "y"),
+                crs = 4326)
+
+## Images to be plot on the map
+hospital = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/images/phillyHospital.jpg"
+fatalTrend = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/images/TotalPhillyShootingsbyYear.png"
+
+##################################################
+
+leaflet() %>%
+  setView(lng=-75.15092, lat=40.00995, zoom = 11) %>%
+  addProviderTiles(providers$CartoDB.DarkMatter, group="Dark") %>%
+  addProviderTiles(providers$CartoDB.DarkMatterNoLabels, group="DarkLabel") %>%  
+  addProviderTiles(providers$Esri.NatGeoWorldMap, group="Esri") %>%
+  addControl(title, position = "topleft", className="map-title") %>%
+  ## mini reference map
+  addMiniMap() %>%
+  ## neighborhood boundary
+  addPolygons(data = phillyNeighbor,
+              color = 'skyblue',
+              weight = 1)  %>%
+  ## plot information on the map
+  addCircleMarkers(data = phillyNeighborShooting,
+                   radius = ~ifelse(fatal == "1", 5, 3),
+                   color = ~pal(fatal),
+                   stroke = FALSE, 
+                   fillOpacity = 0.5,
+                   popup = ~popupTable(phillyNeighborShooting),
+                   clusterOptions = markerClusterOptions(maxClusterRadius = 40)) %>%
+  # Adding the image of city hall
+  addCircleMarkers(data = pnt, 
+                   color = "blue",
+                   weight = 2,
+                   label = "St. Christopher's Hospital for Children",
+                   stroke = FALSE, 
+                   fillOpacity = 0.95,
+                   group = "pnt") %>%
+  addPopupImages(hospital, 
+                  width = 100,
+                  height = 120,
+                  tooltip = FALSE,
+                  group = "pnt")  %>%
+  # Trend of crimes over the years
+  addCircleMarkers(data = mortal, 
+                   color = "purple",
+                   weight = 2,
+                   label = "Trend",
+                   stroke = FALSE, 
+                   fillOpacity = 0.95,
+                   group = "mortal") %>%
+  addPopupImages(fatalTrend, 
+                  width = 500,
+                  height = 350,
+                  tooltip = FALSE,
+                  group = "mortal") %>%
+  addLayersControl(baseGroups = c('Dark', 'DarkLabel', 'Esri'),
+                   overlayGroups = c("Crime Data"),
+                   options = layersControlOptions(collapsed = TRUE)) %>%
+  browsable()
+```
+
+There are appear to be less shootings on the outer regions of Philadelphia, and the numbers of shootings increase as you move closer to the center of Philadelphia.
+In observing the total amounts of shootings in Philadelphia over the years, it appears there is always more non-fatal shootings than fatal shootings, regardless of year. Amounts of shootings were pretty constant between 2015 and 2019 for fatal and non-fatal. The amount of shootings increased in 2020 for both types, especially for non-fatal shootings, because of the COVID-19 pandemic. The numbers of fatal and non-fatal shootings remained about as high as they were in 2020 for the following two years. Then in 2023, the amount of shootings for both types decrased again, especially for non-fatal shootings.
+
+
+# Presidential Election 2020 Results Choropleth Scatterplot Map
+
+```{r}
+presidential <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/countypresidential_election_2000-2020.csv")
+geocode <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/fips2geocode.csv")
+###
+presidential2 <- presidential %>%
+  filter(year == 2020, party == "DEMOCRAT" | party == "REPUBLICAN") %>%
+  dplyr::select(state_po, county_name, county_fips, party, candidatevotes)
+###
+election <- merge(x = presidential2, y = geocode, by.x = 'county_fips', by.y ='fips', all = FALSE)
+election2020 <- election %>%
+  dplyr::select(-county, -state)
+#write.csv(x = election2020, file = "PresidentialElectionMergedData.csv", row.names = FALSE)
+#election2020 <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/PresidentialElectionMergedData.csv")
+###
+electR <- election2020 %>%
+  filter(party == "REPUBLICAN") %>%
+  dplyr::rename(RepublicanVotes = candidatevotes)
+electD <- election2020 %>%
+  filter(party == "DEMOCRAT") %>%
+  dplyr::rename(DemocratVotes = candidatevotes)
+electionNew <- merge(x = electR, y = electD, by.x = 'county_fips', by.y ='county_fips', all = FALSE)
+electionNew2 <- electionNew %>%
+  dplyr::select(-state_po.y, -rMapState.y, -rMapCounty.y, -lon.y, -lat.y, -county_name.y, -party.y, -party.x, -rMapState.x, -rMapCounty.x)
+electionNew2$party <- ifelse(test=electionNew2$RepublicanVotes > electionNew2$DemocratVotes, yes="Republican", no=ifelse(test=electionNew2$RepublicanVotes < electionNew2$DemocratVotes, yes="Democrat", no="Neither"))
+electionNew2$won <- ifelse(test=electionNew2$RepublicanVotes > electionNew2$DemocratVotes, yes=electionNew2$RepublicanVotes*1, no=ifelse(test=electionNew2$RepublicanVotes < electionNew2$DemocratVotes, yes=electionNew2$DemocratVotes*1, no=0))
+#write.csv(x = electionNew2, file = "PresidentialElectionMergedData2.csv", row.names = FALSE)
+#electionNew2 <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/PresidentialElectionMergedData2.csv")
+###
+partyColor <- c("#DC267F", "blue", "gray")
+partyColor <- setNames(partyColor, c("Republican", "Democrat", "Neither"))
+###
+plot_ly(
+    data = electionNew2,
+    x = ~lon.x, y = ~lat.x, color = ~factor(party), colors = partyColor,
+        text = ~paste("County: ", county_name.x,
+                   "<br>State: ", state_po.x,
+                   "<br>Number of Votes: ", won),
+     ## using the following hovertemplate() to add the information of the
+     ## Two numerical variables to the hover text.
+     hovertemplate = paste('<i><b>Latitude<b></i>: %{y}',
+                           '<br><b>Longitude</b>: %{x}',
+                           '<br><b>%{text}</b>'),
+     alpha = 0.6,
+     type = "scatter",
+     mode = "markers",
+     ## graphic size
+     width = 700,
+     height = 500
+   ) %>%
+    layout(  
+      ### Title 
+      title =list(text = "2020 Presidential Election Results by County", 
+                  font = list(family = "Arial", 
+                                size = 18,
+                               color = "blue")), 
+      ### legend
+      legend = list(title = list(text = 'Political Party',
+                                 font = list(family = "Courier New",
+                                               size = 14,
+                                              color = "black")),
+                    bgcolor = "beige",
+                    bordercolor = "navy",
+                    groupclick = "togglegroup",
+                    orientation = "v"
+                    ),
+      margin = list(
+              b = 100,
+              l = 100,
+              t = 100,
+              r = 50
+      ),
+      ## Background
+      plot_bgcolor ='#f7f7f7', 
+      ## Axes labels
+            xaxis = list( 
+                    title=list(text = 'Longitude',
+                               font = list(family = 'Arial')),
+                    zerolinecolor = 'white', 
+                    zerolinewidth = 2, 
+                    gridcolor = 'white'), 
+            yaxis = list( 
+                    title=list(text = 'Latitude',
+                               font = list(family = 'Arial')),
+                    zerolinecolor = 'white', 
+                    zerolinewidth = 2, 
+                    gridcolor = 'white',
+                    range=c(25,50))
+    )
+```
+
+There appear to be more counties in the states in the eastern half of the United States compared to the western half. This couid be because maybe not as many people live in the states in the western half due to living conditions or even weather, causing there to be not as many counties needed to divide them. The eastern half of the country holds more people, especially in the east coast and states like Iowa, Arkansas, and Oklahoma, requiring a larger number of counties.
+Given the official 2020 presidential election map that the Democrats won this presidential election, I am surprised that there are not as many Democratic counties as there are Republican. This could be due to lack of visibility on the scatteplot map since the eastern half counties are more comppressed. It is also perhaps possible that the Democratic counties were underrepresented in the 2020 data. The noetheastern and west coast cost counties mostly seem to favor Democrats, which is to be expected since those states ended up Democratic in the poll results.
