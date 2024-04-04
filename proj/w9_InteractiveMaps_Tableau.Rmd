@@ -1,0 +1,312 @@
+---
+title: "Presidential Election Results by County (2000-2020) Tableau Map"
+author: "Andrew Heneghan"
+date: "4/3/2024"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+<style type="text/css">
+
+/* Table of content - navigation */
+
+div#TOC li {
+    list-style:none;
+    background-color:lightgray;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #780c0c;
+}
+
+/* Title fonts */
+
+h1.title {
+  font-size: 24px;
+  color: darkblue;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant-caps: normal;
+}
+
+h4.author {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: navy;
+  text-align: center;
+}
+
+h4.date {
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: darkblue;
+  text-align: center;
+}
+
+/* Section headers */
+
+h1 {
+    font-size: 22px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h2 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h3 {
+    font-size: 15px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+h4 {
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+/* Decoration of hyperlinks  */
+
+/* unvisited link */
+a:link {
+  color: green;
+}
+
+/* visited link */
+a:visited {
+  color: purple;
+}
+
+/* mouse over link */
+a:hover {
+  color: red;
+}
+
+/* selected link */
+a:active {
+  color: yellow;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+   library(tidyverse)
+}
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("plotly")) {
+   install.packages("plotly")
+   library(plotly)
+}
+if (!require("gapminder")) {
+   install.packages("gapminder")
+   library(gapminder)
+}
+if (!require("RCurl")) {
+    install.packages("RCurl")
+    library("RCurl")
+}
+if (!require("colourpicker")) {
+    install.packages("colourpicker")              
+    library("colourpicker")
+}
+if (!require("gganimate")) {
+    install.packages("gganimate")              
+    library("gganimate")
+}
+if (!require("gifski")) {
+    install.packages("gifski")              
+    library("gifski")
+}
+if (!require("magick")) {
+    install.packages("magick")              
+    library("magick")
+}
+if (!require("grDevices")) {
+    install.packages("grDevices")              
+    library("grDevices")
+}
+if (!require("leaflet")) {
+    install.packages("leaflet")              
+    library("leaflet")
+}
+if (!require("maps")) {
+    install.packages("maps")              
+    library("maps")
+}
+if (!require("htmltools")) {
+    install.packages("htmltools")              
+    library("htmltools")
+}
+if (!require("htmlwidgets")) {
+    install.packages("htmlwidgets")              
+    library("htmlwidgets")
+}
+if (!require("leaflegend")) {
+    install.packages("leaflegend")              
+    library("leaflegend")
+}
+if (!require("geojsonio")) {
+    install.packages("geojsonio")              
+    library("geojsonio")
+}
+if (!require("stringi")) {
+    install.packages("stringi")              
+    library("stringi")
+}
+if (!require("RColorBrewer")) {
+    install.packages("RColorBrewer")              
+    library("RColorBrewer")
+}
+if (!require("tigris")) {
+    install.packages("tigris")              
+    library("tigris")
+}
+if (!require("leafpop")) {
+    install.packages("leafpop")              
+    library("leafpop")
+}
+if (!require("leafem")) {
+    install.packages("leafem")              
+    library("leafem")
+}
+if (!require("tmap")) {
+    install.packages("tmap")              
+    library("tmap")
+}
+if (!require("tmaptools")) {
+    install.packages("tmaptools")              
+    library("tmaptools")
+}
+if (!require("webshot2")) {
+    install.packages("webshot2")              
+    library("webshot2")
+}
+if (!require("sf")) {
+    install.packages("sf")              
+    library("sf")
+}
+if (!require("terra")) {
+    install.packages("terra")              
+    library("terra")
+}
+if (!require("leafpop")) {
+    install.packages("leafpop")              
+    library("leafpop")
+}
+
+##
+knitr::opts_chunk$set(echo = TRUE,       
+                      warning = FALSE,   
+                      result = TRUE,   
+                      message = FALSE,
+                      comment = NA)
+```
+
+# Introduction
+
+The main data set used consists of two separate datasets merged together as to be able use county fips number to map out the data. Variables like longitude, latitude, county fips code, and state are used to map out information regarding the presidential elections from 2000 to 2020. This final dataset contains new variables containing information about which political party and candidate won in a county during a given year.
+A map of the United States, showing the results of presidential elections between 2000 and 2020 at the county level, will be visualized using this dataset. It will be filtered by year and only include the Democrat and Republican parties. Hover text will also include things like county, state where the county is, which party and presidential candidate won, total votes that candidate won, and percent of overall votes for that county they won.
+
+
+# Process of Data Management
+
+```{r}
+presidential <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/countypresidential_election_2000-2020.csv")
+geocode <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/fips2geocode.csv")
+###
+election <- merge(x = presidential, y = geocode, by.x = 'county_fips', by.y ='fips', all = FALSE)
+electionA <- election %>%
+  dplyr::select(-county, -state.y, -office, -version, -state_po, -mode) 
+###
+electR <- electionA %>%
+  filter(party == "REPUBLICAN") %>%
+  mutate(newKey = paste(county_fips, "-", year, sep = "")) %>%
+  dplyr::rename(RepublicanVotes = candidatevotes)# %>%
+  #aggregate(RepublicanVotes ~ county_name, FUN = sum, na.rm = TRUE)
+electD <- electionA %>%
+  filter(party == "DEMOCRAT") %>%
+  mutate(newKey = paste(county_fips, "-", year, sep = "")) %>%
+  dplyr::rename(DemocratVotes = candidatevotes)# %>%
+  #aggregate(DemocratVotes ~ county_name, FUN = sum, na.rm = TRUE)
+electionB <- merge(x = electR, y = electD, by.x = 'newKey', by.y ='newKey', all = FALSE)
+###
+electionC <- electionB %>%
+  dplyr::select(-totalvotes.y, -party.x, -state.x.y, -rMapState.y, -rMapCounty.y, -lon.y, -lat.y, -county_name.y, -party.y, -year.y, -rMapState.x, -rMapCounty.x, -county_fips.y, -newKey) %>%
+  dplyr::rename(fips = county_fips.x, year = year.x, state = state.x.x, county_name = county_name.x, RepCandidate = candidate.x, DemCandidate = candidate.y, totalVotes = totalvotes.x, lon = lon.x, lat = lat.x)
+###
+electionC$winningParty <- ifelse(test=electionC$RepublicanVotes > electionC$DemocratVotes, yes="Republican", no=ifelse(test=electionC$RepublicanVotes < electionC$DemocratVotes, yes="Democrat", no="Other"))
+###
+electionC$winningPresident <- ifelse(test=electionC$RepublicanVotes > electionC$DemocratVotes, yes=electionC$RepCandidate, no=ifelse(test=electionC$RepublicanVotes < electionC$DemocratVotes, yes=electionC$DemCandidate, no="Other"))
+###
+electionC$votesWon <- ifelse(test=electionC$RepublicanVotes > electionC$DemocratVotes, yes=electionC$RepublicanVotes*1, no=ifelse(test=electionC$RepublicanVotes < electionC$DemocratVotes, yes=electionC$DemocratVotes*1, no=0))
+###
+electionC$votesPercent <- (electionC$votesWon/electionC$totalVotes)*100
+###
+#write.csv(x = electionC, file = "PresidentialElection_County.csv", row.names = FALSE)
+electionC <- read.csv(file = "https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/PresidentialElection_County.csv")
+```
+
+First, the two datasets, the presidential election data and the county fips coding, are merged together to create the initial data. Then, two data subsets were made. One contained all data for the Democratic Party while the other had the Republican party data. The variable showing the numbr of votes each candidate in a certain county in a certain year was renamed in each dataset to create separate variables when they were re-merged, doing so with a custom key variable. Now, for each county by year observation, information for the Democratic and Republican parties appeared in the same observation instead of being separate observations. Unneeded variables were then dropped from this new dataset and other were renamed to sound more proper. Finally, four new variables were created: the winning party and presidential candidate for a given county during a given election year, the number of votes that party/candidate recieved from that county that year, and the percentage of votes overall that party/candidate recieved from that county that year.
+
+Unfortunately, some data for the 2020 election year was broken down more than for other years by voting type (like absentee, in-person, etc.). No method for properly aggregating this data, so it appeared accurate on the resulting map, could be found, so that has been left unchanged.
+
+
+# Presidential Election Results Choropleth Map
+
+<table border=0 bordercolor="chocolate" bgcolor='#f6f6f6'  width=100%  align = center>
+<tr>
+<td>
+
+<div class='tableauPlaceholder' id='viz1712183969773' style='position: relative'>
+<noscript><a href='#'><img alt='Presidential Election Results by County (2000-2020) ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;RY&#47;RYKWJS27J&#47;1_rss.png' style='border: none' /></a>
+</noscript>
+
+<object class='tableauViz'  style='display:none;'>
+<param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' />
+<param name='embed_code_version' value='3' />
+<param name='path' value='shared&#47;RYKWJS27J' />
+<param name='toolbar' value='yes' />
+<param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;RY&#47;RYKWJS27J&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>
+
+<script type='text/javascript'>
+var divElement = document.getElementById('viz1712183969773');
+var vizElement = divElement.getElementsByTagName('object')[0]; vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';
+var scriptElement = document.createElement('script');
+scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js'; vizElement.parentNode.insertBefore(scriptElement, vizElement);
+</script>
+
+</td>
+</tr>
+</table>
+
+One pattern that seems apparent in all the maps, separated by year, most counties vote Republican, regardless of year. It seems that most counties in the upper center, upper right, and western coast of the United States, vote Democrat, regardless of year. This is also the case with the upper left counties in Washington state, lower California, and even some counties in New Mexico, Arizona, and Colorado. More counties tend to vote Republican in 2000, 2004, and 2016 when the Republican candidates of those elections won, and more counties tend to vote Democrat in 2008, 2012, and 2020 when the Democrat candidates of those elections won. The most number of counties who voted Democrat was greatest in 2008, as states like Illinois, Wisconsin, and Iowa had more counties that voted Democrat.
+
+
