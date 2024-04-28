@@ -1,0 +1,262 @@
+---
+title: "Penguin Data Analysis Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+<style type="text/css">
+/* Get a fancy font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap');
+
+body {
+  background-color: lightgray;
+  color: lightsalmon; /* text color */
+  text-align: left;
+}
+
+.navbar {
+	position: fixed;
+	display: flex;
+	justify-content: center;
+	width: 100%;
+}
+
+/* Make text visible on inputs */
+.shiny-input-container {
+  color: darkblue;
+}
+
+.navbg {
+  background-color: blue;
+  color: white;
+}
+
+</style>                    
+
+\
+
+
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(plotly)
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r data}
+penguin1 = na.omit(read.csv(file="https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/w03-penguins.csv"))[,-1]
+penguin1$BMI = (penguin1$body_mass_g/4000)
+x.names = names(penguin1)[c(3,4,5,9)]
+y.names = names(penguin1)[c(3,4,5,9)]
+location = unique(penguin1$island)
+```
+
+
+\
+
+
+Column {.sidebar data-width=200}
+-------------------------------------------------------------------
+
+\
+
+<hr>
+
+
+```{r}
+radioButtons(inputId = "island",
+            label = strong("Location"), 
+            choices = c("All", as.vector(location)), 
+            selected = "All")
+```
+
+<hr>
+
+```{r}
+selectInput(inputId="Y", 
+            label = strong("Response Variable: Y"), 
+            choices = y.names[], 
+            selected = y.names[1])
+
+selectInput(inputId="X", 
+            label = strong("Predictor Variable: X"), 
+            choices = x.names[], 
+            selected = x.names[2])
+      ###
+sliderInput(inputId = "newX", label = "New Value for Prediction:", value = 117, min = 0, max = 235, step = 0.1)
+
+```
+
+
+\
+
+<hr>
+
+```{r}
+  workDat = function(){
+    if (input$island == "Biscoe") {
+      workingData = penguin1[which(penguin1$island == "Biscoe"),]
+    } else if (input$island == "Dream") {
+      workingData = penguin1[which(penguin1$island == "Dream"),]
+    } else if (input$island == "Torgersen") {
+      workingData = penguin1[which(penguin1$island == "Torgersen"),]
+    } else {
+      workingData = penguin1
+    }
+    workingData 
+  }
+```
+
+
+
+Column {data-width=450 .tabset .tabset-fade}
+-------------------------------------------------------------------
+
+### **Scatterplot** 
+```{r}
+renderPlotly({
+# hist(workDat()[[input$X]]) 
+plot_ly(data = workDat(),
+        x =  ~workDat()[[input$X]], 
+        y =  ~workDat()[[input$Y]], 
+        color = ~workDat()$island,
+        colors = c("purple4", "darkorange", "indianred2"),
+        hovertemplate = paste('<i><b>',input$Y,'<b></i>: %{y}',
+                             '<br><b>',input$X,'</b>:  %{x}',
+                             '<br><b>',input$island,'</b>'),
+        alpha  = 0.9,
+        size = ~workDat()[[input$Y]],
+        type = "scatter",
+        mode = "markers",
+        width=500, height=450)   %>%
+    layout(plot_bgcolor = "#e5ecf6",
+           margin = list(l = 20, r = 20, b = 110, t = 20),
+           xaxis = list(title = paste(input$X)), 
+           yaxis = list(title = paste(input$Y)), 
+           legend = list(title=list(text='<b> Location </b>'),
+                         orientation = "r",
+                         xanchor = "center")
+        )
+  })
+```
+
+
+### **Regression** 
+
+```{r}
+renderPlot({
+  regdata = workDat()
+  if (input$island == "All"){
+    m0 = lm(penguin1[[input$Y]]~penguin1[[input$X]])
+    plot(penguin1[[input$X]], penguin1[[input$Y]],
+         main = paste("Relationship between", input$Y, "and", input$X),
+         type = "p", pch = 19, col = "blue", xlab = input$X, ylab = input$Y)
+    abline(m0, lwd = 2, col = "red")
+  } else {
+    m1 = lm(workDat()[[input$Y]]~workDat()[[input$X]])
+    plot(workDat()[[input$X]], workDat()[[input$Y]],
+         main = paste("Relationship between", input$Y, "and", input$X),
+         type = "p", pch = 19, col = "blue", xlab = input$X, ylab = input$Y)
+    abline(m1, lwd = 2, col = "red")    
+  }
+})
+```
+
+### **Residual Plots**
+
+```{r}
+renderPlot({
+  regdata = workDat()
+  if (input$island == "All"){
+    LM = lm(penguin1[[input$Y]]~penguin1[[input$X]])
+  } else {
+    LM = lm(workDat()[[input$Y]]~workDat()[[input$X]])
+  }
+  par(mfrow = c(2,2))
+  plot(LM)
+})
+```
+
+### **Prediction**
+
+```{r}
+renderPlot({
+    dataset = workDat()
+    ###
+    m3 = lm(dataset[,input$Y] ~ dataset[,input$X])
+    ###
+    pred.y = coef(m3)[1] + coef(m3)[2]*input$newX
+         #####
+    plot(dataset[,input$X], dataset[,input$Y], 
+         xlab = input$X,
+         ylab = input$Y,
+         main = paste("Relationship between", input$Y, "and", input$X)
+       )
+    abline(m3, col = "red", lwd = 1, lty=2)
+    points(input$newX, pred.y, pch = 19, col = "red", cex = 2)
+  })
+```
+
+
+
+Column {data-width=400}
+-------------------------------------------------------------------
+
+
+### **Boxplots of Explanatory Variable by Location**
+```{r}
+renderPlot({
+ #plot(workDat()[[input$X]], workDat()[[input$Y]]) 
+ b <- ggplot(data=workDat(), aes(x=workDat()$island, y=workDat()[[input$X]])) +
+        geom_boxplot(aes(fill=workDat()$island)) +  
+        ylab(input$X) + 
+        xlab("Location") + 
+        #ggtitle(paste("Boxplot of the response variable: ", input$X)) +
+        labs(fill = "Location") +
+        stat_summary(fun.y=mean, geom="point", shape=5, size=4)
+  b+scale_fill_manual(values=c("darkorange", "purple4", "indianred2"))
+})
+```
+
+
+### **Ridge Plot for Distribution of Response by Location**
+```{r}
+renderPlotly({
+  if(input$island == "All"){
+    flipper.len.biscoe <- penguin1[which(penguin1$island == "Biscoe"),]
+    biscoe <- density(flipper.len.biscoe$flipper_length_mm)
+    flipper.len.dream <- penguin1[which(penguin1$island == "Dream"),]
+    dream <- density(flipper.len.dream$flipper_length_mm)
+    flipper.len.torgersen <- penguin1[which(penguin1$island == "Torgersen"),]
+    torgersen <- density(flipper.len.torgersen$flipper_length_mm)
+    # plot density curves
+    plot_ly(x = ~torgersen$x, y = ~torgersen$y, 
+               type = 'scatter',
+               mode = 'lines', 
+               name = 'Torgersen',
+               line = list(color = 'indianred'),
+               fill = 'toself')  %>% 
+       add_trace(x = ~biscoe$x, y = ~biscoe$y, name = 'Biscoe', line = list(color = 'purple') , fill = 'toself')  %>%
+       add_trace(x = ~dream$x, y = ~dream$y, name = 'Dream', line = list(color = 'darkorange'), fill = 'toself')  %>%
+       layout(xaxis = list(title = paste(input$Y)), yaxis = list(title = 'Density'))
+    } else {
+      den <- density(workDat()[[input$Y]])
+      plot_ly(x = ~den$x,
+              y = ~den$y,
+              color = ~input$island,
+              colors = c("indianred2", "darkorange", "purple4"),
+              type = 'scatter',
+              mode = 'lines',
+              name = input$island,
+              fill = 'toself')    %>%
+      layout(xaxis = list(title = paste(input$Y)), yaxis = list(title = 'Density'))
+    }
+})
+```
