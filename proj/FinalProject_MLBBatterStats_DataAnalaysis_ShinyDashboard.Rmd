@@ -1,0 +1,305 @@
+---
+title: "2023 MLB Batters Data Analysis Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: sandstone
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+<style type="text/css">
+/* Get a fancy font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap');
+
+body {
+  background-color: lightgray;
+  color: darkgreen; /* text color */
+  text-align: left;
+}
+
+.navbar {
+	position: fixed;
+	display: flex;
+	justify-content: center;
+	width: 100%;
+}
+
+/* Make text visible on inputs */
+.shiny-input-container {
+  color: purple;
+}
+<!--
+.navbg {
+  background-color: blue;
+  color: white;
+}
+-->
+</style>                    
+
+\
+
+```{r setup, include=FALSE}
+if (!require("flexdashboard")) {
+   install.packages("flexdashboard")
+   library(flexdashboard)
+}
+if (!require("shiny")) {
+   install.packages("shiny")
+   library(shiny)
+}
+if (!require("plotly")) {
+   install.packages("plotly")
+   library(plotly)
+}
+if (!require("ggplot2")) {
+   install.packages("ggplot2")
+   library(ggplot2)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+   library(tidyverse)
+}
+if (!require("dplyr")) {
+   install.packages("dplyr")
+   library(dplyr)
+}
+if (!require("stats")) {
+   install.packages("stats")
+   library(stats)
+}
+if (!require("fANCOVA")) {
+   install.packages("fANCOVA")
+   library(fANCOVA)
+}
+```
+
+
+```{r data}
+batters = read.csv(file="https://raw.githubusercontent.com/azheneghan/aheneghan/main/datasets/mlb_Batters.csv")[,-1]
+batters <- batters %>%
+  dplyr::rename(RunsScored = R, NumberofHits = H, NumberofHomeRuns = HR, NumberofWalks = BB, NumberofStrikeOuts = SO, AtBats = AB)
+y.names = names(batters)[c(5,6,7,10,14,15)]
+x.names = names(batters)[c(5,6,7,10,14,15)]
+team = unique(batters$Team)
+```
+
+
+\
+
+
+Column {.sidebar data-width=200}
+-------------------------------------------------------------------
+
+\
+
+<hr>
+
+<!-- put all input widgets in the same R code chunk.
+     The code is the same as we used in the regular R shiny apps-->
+```{r}
+selectInput(inputId="Team", 
+            label = strong("Team"), 
+            choices = c("All", as.vector(team)), 
+            selected = "All")
+
+selectInput(inputId="Y", 
+            label = strong("Response Variable: Y"), 
+            choices = y.names[], 
+            selected = y.names[1])
+
+selectInput(inputId="X", 
+            label = strong("Predictor Variable: X"), 
+            choices = x.names[], 
+            selected = x.names[2])
+      ###
+sliderInput("newX", strong("New Value for Prediction:"), 2.5, min = 0, max = 700, step = 0.5)
+
+```
+
+
+\
+
+<hr>
+
+```{r}
+  workDat = function(){
+      if (input$Team == "ARI") {
+          workingData = batters[which(batters$Team == "ARI"),]
+      } else if (input$Team == "ATL") {
+          workingData = batters[which(batters$Team == "ATL"),]
+      } else if (input$Team == "BAL") {
+          workingData = batters[which(batters$Team == "BAL"),]
+      } else if (input$Team == "BOS") {
+          workingData = batters[which(batters$Team == "BOS"),]
+      } else if (input$Team == "CHC") {
+          workingData = batters[which(batters$Team == "CHC"),]
+      } else if (input$Team == "CIN") {
+          workingData = batters[which(batters$Team == "CIN"),]
+      } else if (input$Team == "CLE") {
+          workingData = batters[which(batters$Team == "CLE"),]
+      } else if (input$Team == "COL") {
+          workingData = batters[which(batters$Team == "COL"),]
+      } else if (input$Team == "CWS") {
+          workingData = batters[which(batters$Team == "CWS"),]
+      } else if (input$Team == "DET") {
+          workingData = batters[which(batters$Team == "DET"),]
+      } else if (input$Team == "HOU") {
+          workingData = batters[which(batters$Team == "HOU"),]
+      } else if (input$Team == "KC") {
+          workingData = batters[which(batters$Team == "KC"),]
+      } else if (input$Team == "LAA") {
+          workingData = batters[which(batters$Team == "LAA"),]
+      } else if (input$Team == "LAD") {
+          workingData = batters[which(batters$Team == "LAD"),]
+      } else if (input$Team == "MIA") {
+          workingData = batters[which(batters$Team == "MIA"),]
+      } else if (input$Team == "MIL") {
+          workingData = batters[which(batters$Team == "MIL"),]
+      } else if (input$Team == "MIN") {
+          workingData = batters[which(batters$Team == "MIN"),]
+      } else if (input$Team == "NYM") {
+          workingData = batters[which(batters$Team == "NYM"),]
+      } else if (input$Team == "NYY") {
+          workingData = batters[which(batters$Team == "NYY"),]
+      } else if (input$Team == "OAK") {
+          workingData = batters[which(batters$Team == "OAK"),]
+      } else if (input$Team == "PHI") {
+          workingData = batters[which(batters$Team == "PHI"),]
+      } else if (input$Team == "PIT") {
+          workingData = batters[which(batters$Team == "PIT"),]
+      } else if (input$Team == "SD") {
+          workingData = batters[which(batters$Team == "SD"),]
+      } else if (input$Team == "SEA") {
+          workingData = batters[which(batters$Team == "SEA"),]
+      } else if (input$Team == "SF") {
+          workingData = batters[which(batters$Team == "SF"),]
+      } else if (input$Team == "STL") {
+          workingData = batters[which(batters$Team == "STL"),]
+      } else if (input$Team == "TB") {
+          workingData = batters[which(batters$Team == "TB"),]
+      } else if (input$Team == "TEX") {
+          workingData = batters[which(batters$Team == "TEX"),]
+      } else if (input$Team == "TOR") {
+          workingData = batters[which(batters$Team == "TOR"),]
+      } else if (input$Team == "WAS") {
+          workingData = batters[which(batters$Team == "WAS"),]
+      } else {
+          workingData = batters
+      }
+   workingData 
+  }
+```
+
+
+
+Column {data-width=800 .tabset .tabset-fade}
+-------------------------------------------------------------------
+    
+### **Interactive Scatterplot** 
+
+```{r}
+renderPlotly({
+plot_ly(data = workDat(),
+        x =  ~workDat()[[input$X]], 
+        y =  ~workDat()[[input$Y]],
+        color = ~workDat()$Team, 
+        hovertemplate = paste('<i><b>',input$Y,'<b></i>: %{y}',
+                             '<br><b>',input$X,'</b>:  %{x}',
+                             '<br><b>',input$Team,'</b>'),
+        alpha  = 0.9,
+        size = ~workDat()[[input$Y]],
+        type = "scatter",
+        mode = "markers")   %>%
+    layout(#title = paste( input$X, "vs", input$Y), 
+           plot_bgcolor = "#e5ecf6",
+           margin = list(l = 20, r = 20, b = 80, t = 10),
+           xaxis = list(title = paste(input$X)), 
+           yaxis = list(title = paste(input$Y)), 
+           legend = list(title=list(text='<b> MLB Team </b>'),
+                         orientation = "r",
+                         xanchor = "left")
+        )
+  })
+```
+
+### **Boxplots of (X) Distribution**
+
+```{r fig.align='center', fig.width=4, fig.height=3}
+renderPlot({
+ ggplot(data=workDat(), aes(x=workDat()$Team, y=workDat()[[input$X]])) +
+        geom_boxplot(aes(fill=workDat()$Team)) +  
+        ylab(input$X) + 
+        xlab("MLB Team") + 
+        labs(fill = "Team") +
+        stat_summary(fun=mean, geom="point", shape=5, size=4)  
+})
+```
+
+### **Regression Plot** 
+
+```{r}
+renderPlot({
+  regdata = workDat()
+  if (input$Team == "All"){
+    m0 = lm(batters[[input$Y]]~batters[[input$X]])
+    plot(batters[[input$X]], batters[[input$Y]],
+      main = "", type = "p", pch = 19, col = "blue", xlab = input$X, ylab = input$Y)
+    abline(m0, lwd = 2, col = "red")
+  } else {
+    m1 = lm(workDat()[[input$Y]]~workDat()[[input$X]])
+    plot(workDat()[[input$X]], workDat()[[input$Y]],
+      main = "", type = "p", pch = 19, col = "blue", xlab = input$X, ylab = input$Y)
+    abline(m1, lwd = 2, col = "red")    
+  }
+})
+```
+
+### **Residual Plots**
+
+```{r}
+renderPlot({
+  regdata = workDat()
+  if (input$Team == "All"){
+    LM = lm(batters[[input$Y]]~batters[[input$X]])
+  } else {
+    LM = lm(workDat()[[input$Y]]~workDat()[[input$X]])
+  }
+  par(mfrow = c(2,2))
+  plot(LM)
+})
+```
+
+### **Prediction Plot**
+
+```{r}
+renderPlot({
+    dataset = workDat()
+
+    ###
+    m3 = lm(dataset[,input$Y] ~ dataset[,input$X])
+
+    pred.y = coef(m3)[1] + coef(m3)[2]*input$newX
+         #####
+    plot(dataset[,input$X], dataset[,input$Y], 
+         xlab = input$X, ylab = input$Y, main = "")
+        ## adding a regression line to the plot
+     abline(m3, col = "red", lwd = 1, lty=2)
+    points(input$newX, pred.y, pch = 19, col = "red", cex = 2)
+  })
+```
+
+### **Regression Coefficients**
+
+```{r}
+renderTable({
+    dataset = workDat()
+    m0 = lm(dataset[,input$Y] ~ dataset[,input$X])
+    regcoef = data.frame(coef(summary(m0)))
+    ##
+    regcoef$Pvalue = regcoef[,names(regcoef)[4]]
+    ###
+    regcoef$Variable = c("Intercept", input$X)
+    regcoef[,c(6, 1:3, 5)]
+  })
+```
