@@ -1,0 +1,337 @@
+---
+title: 'Merging Relational Data Tables Into One Dataset With SQL Clauses'
+author: "Andrew Heneghan"
+date: "7/10/23"
+output:
+ html_document:
+ toc: yes
+ toc_depth: 4
+ toc_float: yes
+ fig_width: 4
+ fig_caption: yes
+ number_sections: yes
+ theme: readable
+ fig_height: 4
+ word_document:
+ toc: yes
+ toc_depth: 4
+ fig_caption: yes
+ keep_md: yes
+ pdf_document:
+ toc: yes
+ toc_depth: 4
+ fig_caption: yes
+ number_sections: yes
+ fig_width: 3
+ fig_height: 3
+editor_options:
+ chunk_output_type: inline
+---
+```{=html}
+<style type="text/css">
+/* Cascading Style Sheets (CSS) is a stylesheet language used to
+describe the presentation of a document written in HTML or XML. it is
+a simple mechanism for adding style (e.g., fonts, colors, spacing) to
+Web documents. */
+h1.title { /* Title - font specifications of the report title */
+ font-size: 24px;
+ color: DarkRed;
+ text-align: center;
+ font-family: "Gill Sans", sans-serif;
+}
+h4.author { /* Header 4 - font specifications for authors */
+ font-size: 20px;
+ font-family: system-ui;
+ color: DarkRed;
+ text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date */
+ font-size: 18px;
+ font-family: system-ui;
+ color: DarkBlue;
+ text-align: center;
+}
+h1 { /* Header 1 - font specifications for level 1 section title */
+ font-size: 22px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: center;
+}
+h2 { /* Header 2 - font specifications for level 2 section title */
+ font-size: 20px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: left;
+}
+h3 { /* Header 3 - font specifications of level 3 section title */
+ font-size: 18px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: left;
+}
+h4 { /* Header 4 - font specifications of level 4 section title */
+ font-size: 18px;
+ font-family: "Times New Roman", Times, serif;
+ color: darkred;
+ text-align: left;
+}
+body { background-color:white; }
+.highlightme { background-color:yellow; }
+p { background-color:white; }
+</style>
+```
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output
+# will be included in the output files.
+if (!require("knitr")) {
+ install.packages("knitr")
+ library(knitr)
+}
+if (!require("MASS")) {
+ install.packages("MASS")
+ library(MASS)
+}
+if (!require("leaflet")) {
+ install.packages("leaflet")
+ library(leaflet)
+}
+if (!require("factoextra")) {
+ install.packages("factoextra")
+ library(factoextra)
+}
+if (!require("webshot")) {
+ install.packages("webshot")
+ library(webshot)
+}
+if (!require("TSstudio")) {
+ install.packages("TSstudio")
+ library(TSstudio)
+}
+if (!require("plotrix")) {
+ install.packages("plotrix")
+library(plotrix)
+}
+if (!require("ggridges")) {
+ install.packages("ggridges")
+library(ggridges)
+}
+if (!require("tidyverse")) {
+ install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+ install.packages("GGally")
+library(GGally)
+}
+if (!require("odbc")) {
+   install.packages("odbc")
+   library(odbc)
+}
+if (!require("DBI")) {
+   install.packages("DBI")
+   library(DBI)
+}
+if (!require("RSQLite")) {
+   install.packages("RSQLite")
+   library(RSQLite)
+}
+knitr::opts_chunk$set(echo = TRUE, # include code chunk in the
+ # output file
+ warnings = FALSE, # sometimes, you code may
+ # produce warning messages,
+# you can choose to include
+# the warning messages in
+ # the output file.
+ results = TRUE, # you can also decide whether
+ # to include the output
+# in the output file.
+ message = FALSE
+)
+db <- dbConnect(RSQLite::SQLite(), dbname = "sql.sqlite")
+knitr::opts_chunk$set(connection = "db")
+```
+
+This assignment was done by me, Andrew Heneghan, on 7/10/2023. For Assignment 1, I will:
+
+(1) Read in 4 separate databases about information of pets, information of their corresponding owners, procedure history and procedure detail. 
+(2) Store these data sets in an SQLite database.
+(3) Use SQL join clauses in R code chunks to create one big single data set containing the information from all 4 individual data sets.
+  (a) I will define composite keys between tables in order to merge them all together and save things to the database when needed.
+(4) Justify whether the final combined data set contains the information in all 4 individual data sets.
+
+First, I read in the 4 datasets and stored them in a SQLite database called "pets".
+
+```{r}
+# Loading in the 4 separate datasets
+petsInfo <- read.csv("https://pengdsci.github.io/datasets/PetCareData/PetsInfomation.csv")
+petsOwners <- read.csv("https://pengdsci.github.io/datasets/PetCareData/PetsOwners.csv")
+procDetails <- read.csv("https://pengdsci.github.io/datasets/PetCareData/ProceduresDetails.csv")
+procHistory <- read.csv("https://pengdsci.github.io/datasets/PetCareData/ProceduresHistory.csv")
+```
+
+```{r}
+#Creating a SQLite database
+pets <- dbConnect(drv = SQLite(),
+                 dbname = ":memory:")
+
+#Storing the 4 individual data sets into the database
+dbWriteTable(conn = pets, 
+             name = "petsInfo",
+             value = petsInfo)
+
+dbWriteTable(conn = pets, 
+             name = "petsOwners",
+             value = petsOwners)
+
+dbWriteTable(conn = pets, 
+             name = "procDetails",
+             value = procDetails)
+
+dbWriteTable(conn = pets, 
+             name = "procHistory",
+             value = procHistory)
+ 
+#Removing the local data from the environment
+rm(petsInfo, petsOwners, procDetails, procHistory)
+```
+
+Starting here, I will combine the variables of ProcedureType and ProcedureSubCode into one new variable, for both the ProcedureDetails and ProcedureHistory data sets, to use as composite keys to connect the data sets together.
+
+Here, I combined ProcedureType and ProcedureSubCode in ProcedureDetails into one variable to make a composite key and connect it to ProcedureHistory.
+
+```{sql, connection = "pets", output.var = "NewProcedureVar1"}
+SELECT procDetails.*, 
+       procDetails.ProcedureType||'-'||procDetails.ProcedureSubCode AS newKey1
+FROM procDetails
+```
+
+Here, I combined ProcedureType and ProcedureSubCode in ProcedureHistory into one variable to make a composite key to connect it to ProcedureDetails.
+
+```{sql, connection = "pets", output.var = "NewProcedureVarA"}
+SELECT procHistory.*, 
+       procHistory.ProcedureType||'-'||procHistory.ProcedureSubCode AS newKey2
+FROM procHistory
+```
+
+```{r}
+#Storing the 4 individual data sets into the database
+dbWriteTable(conn = pets, 
+             name = "NewProcedureVarA",
+             value = NewProcedureVarA)
+
+#Removing the local data from the environment
+rm(NewProcedureVarA)
+```
+
+```{sql, connection = "pets", output.var = "NewProcedureVar2"}
+SELECT NewProcedureVarA.ProcedureType as 'ProcType', NewProcedureVarA.ProcedureSubCode as 'ProcSubCode', NewProcedureVarA.PetID, NewProcedureVarA.Date, NewProcedureVarA.newkey2
+FROM NewProcedureVarA
+```
+
+Now that I made the two composite keys, I store the new datasets containing them in the pets database I created.
+
+```{r}
+#Storing the 4 individual data sets into the database
+dbWriteTable(conn = pets, 
+             name = "NewProcedureVar1",
+             value = NewProcedureVar1)
+
+dbWriteTable(conn = pets, 
+             name = "NewProcedureVar2",
+             value = NewProcedureVar2)
+ 
+#Removing the local data from the environment
+rm(NewProcedureVar1, NewProcedureVar2)
+```
+
+I started merging the 4 datasets together from here.
+
+Here, I merged the ProcedureDetails and ProcedureHistory data sets together, using the new composite keys I made, and stored it in the database.
+
+```{sql, connection = "pets", output.var = "innerJoin1"}
+SELECT *
+FROM NewProcedureVar1 AS C
+INNER JOIN NewProcedureVar2 AS D
+ON C.newkey1 = D.newkey2;
+```
+
+```{r}
+#Storing the merged data set into the database
+dbWriteTable(conn = pets, 
+             name = "innerJoin1",
+             value = innerJoin1)
+ 
+#Removing the local data from the environment
+rm(innerJoin1)
+```
+
+Next, I merged the PetsInformation data set with the previously merged data set, using PetID as a composite key, and stored it in the pets database as well.
+
+```{sql, connection = "pets", output.var = "petsinform"}
+SELECT petsInfo.PetID as 'pID', petsInfo.Name as 'petNAME', petsInfo.Kind, petsInfo.Gender, petsInfo.Age, petsInfo.OwnerID
+FROM petsInfo
+```
+
+```{r}
+#Storing the data set into the database
+dbWriteTable(conn = pets, 
+             name = "petsinform",
+             value = petsinform)
+ 
+#Removing the local data from the environment
+rm(petsinform)
+```
+
+```{sql, connection = "pets", output.var = "innerJoin2"}
+SELECT *
+FROM innerJoin1
+INNER JOIN petsinform AS A
+ON innerJoin1.PetID = A.pID;
+```
+
+```{r}
+#Storing the new merged data set into the database
+dbWriteTable(conn = pets, 
+             name = "innerJoin2",
+             value = innerJoin2)
+ 
+#Removing the local data from the environment
+rm(innerJoin2)
+```
+
+Finally, I merged the PetsOwners data set with the previously merged data set, using OwnerID as a composite key. This should fully merge the 4 data sets. This will also be stored in the pets database.
+
+```{sql, connection = "pets", output.var = "petsown"}
+SELECT petsOwners.OwnerID as 'oID', petsOwners.Name as 'ownerName', petsOwners.Surname, petsOwners.StreetAddress, petsOwners.City, petsOwners.State, petsOwners.StateFull, petsOwners.ZipCode
+FROM petsOwners
+```
+
+```{r}
+#Storing the data set into the database
+dbWriteTable(conn = pets, 
+             name = "petsown",
+             value = petsown)
+ 
+#Removing the local data from the environment
+rm(petsown)
+```
+
+```{sql, connection = "pets", output.var = "innerJoin3"}
+SELECT *
+FROM innerJoin2
+FULL JOIN petsown AS B
+ON innerJoin2.OwnerID = B.oID;
+```
+
+```{r}
+#Storing the new merged data set into the database
+dbWriteTable(conn = pets, 
+             name = "innerJoin3",
+             value = innerJoin3)
+ 
+#Removing the local data from the environment
+rm(innerJoin3)
+```
+
+After joining the tables together with these compposite keys, it does appear that all variables from the 4 individual data sets all appear in the one singular data set I have created.

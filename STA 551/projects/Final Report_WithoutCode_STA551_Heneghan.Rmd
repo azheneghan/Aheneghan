@@ -1,0 +1,1244 @@
+---
+title: "Predicting Banking Institution Clients Subscribing a Term Deposit After Direct Marketing Campaigns"
+author: "Andrew Heneghan"
+date: "8/4/2023"
+output:
+  html_document: 
+    toc: yes
+    toc_float: true
+    toc_depth: 4
+    fig_width: 6
+    fig_height: 4
+    fig_caption: yes
+    number_sections: yes
+    theme: readable
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document:
+    toc: yes
+    keep_tex: false
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: yes
+    fig_width: 5
+    fig_height: 4
+---
+
+```{=html}
+<style type="text/css">
+/* Cascading Style Sheets (CSS) is a stylesheet language used to
+describe the presentation of a document written in HTML or XML. it is
+a simple mechanism for adding style (e.g., fonts, colors, spacing) to
+Web documents. */
+h1.title { /* Title - font specifications of the report title */
+ font-size: 24px;
+ color: DarkRed;
+ text-align: center;
+ font-family: "Gill Sans", sans-serif;
+}
+h4.author { /* Header 4 - font specifications for authors */
+ font-size: 20px;
+ font-family: system-ui;
+ color: DarkRed;
+ text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date */
+ font-size: 18px;
+ font-family: system-ui;
+ color: DarkBlue;
+ text-align: center;
+}
+h1 { /* Header 1 - font specifications for level 1 section title */
+ font-size: 22px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: center;
+}
+h2 { /* Header 2 - font specifications for level 2 section title */
+ font-size: 20px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: left;
+}
+h3 { /* Header 3 - font specifications of level 3 section title */
+ font-size: 18px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: left;
+}
+h4 { /* Header 4 - font specifications of level 4 section title */
+ font-size: 18px;
+ font-family: "Times New Roman", Times, serif;
+ color: darkred;
+ text-align: left;
+}
+body { background-color:white; }
+.highlightme { background-color:yellow; }
+p { background-color:white; }
+</style>
+```
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output
+# will be included in the output files.
+if (!require("knitr")) {
+ install.packages("knitr")
+ library(knitr)
+}
+if (!require("MASS")) {
+ install.packages("MASS")
+ library(MASS)
+}
+if (!require("leaflet")) {
+ install.packages("leaflet")
+ library(leaflet)
+}
+if (!require("factoextra")) {
+ install.packages("factoextra")
+ library(factoextra)
+}
+if (!require("webshot")) {
+ install.packages("webshot")
+ library(webshot)
+}
+if (!require("TSstudio")) {
+ install.packages("TSstudio")
+ library(TSstudio)
+}
+if (!require("plotrix")) {
+ install.packages("plotrix")
+library(plotrix)
+}
+if (!require("ggridges")) {
+ install.packages("ggridges")
+library(ggridges)
+}
+if (!require("tidyverse")) {
+ install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+ install.packages("GGally")
+library(GGally)
+}
+if (!require("dplyr")) {
+ install.packages("dplyr")
+library(dplyr)
+}
+if (!require("cocron")) {
+   install.packages("cocron")
+   library(cocron)
+}
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("neuralnet")) {
+   install.packages("neuralnet")
+   library(neuralnet)
+}
+if (!require("pander")) {
+   install.packages("pander")
+   library(pander)
+}
+if (!require("pROC")) {
+   install.packages("pROC")
+   library(pROC)
+}
+if (!require("rpart")) {
+   install.packages("rpart")
+   library(rpart)
+}
+if (!require("rpart.plot")) {
+   install.packages("rpart.plot")
+   library(rpart.plot)
+}
+if (!require("readr")) {
+ install.packages("readr")
+ library(readr)
+}
+if (!require("caret")) {
+ install.packages("caret")
+ library(caret)
+}
+if (!require("ipred")) {
+ install.packages("ipred")
+ library(ipred)
+}
+knitr::opts_chunk$set(echo = TRUE, # include code chunk in the output file
+ warning = FALSE, # Code may produce warning messages you can choose to include the warning messages in the output file.
+ result = TRUE, # you can also decide whether to include the output in the output file.
+ message = FALSE)
+```
+
+# Introduction
+
+A Portuguese banking institution used direct marketing campaigns to gather personal and banking information about their clients. The overall goal of this study is to predict if a client will subscribe to a term deposit after direct marketing campaigns of a Portuguese banking institution. Three different kinds of models, logistic regression, neural network, and decision tree, will be created for the purpose of predicting if a client will subscribe a term deposit. The best of these three models will be accepted as the best model overall for this prediction.
+
+```{r fig.align='center', out.width="70%", fig.cap="Term Deposit Framework"}
+include_graphics("https://github.com/azheneghan/STA551Heneghan/blob/main/images/termdeposit.png?raw=true")
+```
+
+Before any modeling is done, we will look at the data set and do exploratory data analysis (EDA) to look at the distribution and trends of the variables. Some variables, whether numeric or categorical, may be re-categorized based off the results to be used for modeling instead of the original variables. Association between variables will then be looked at through pairwise association and mosaic plots, and variables that seem to hinder the data will be dropped. This fixed data set will be make training and testing data sets to find optimal cut-off probabilities for assessing the accuracy of the different models created. ROC curves will also be created to look at the performance of the different models. The areas under the curves (AUCs) will help to determine which model created is the best model to use for this data set.
+
+# Bank Direct Marketing Data Set Description
+
+The data used for this study comes from direct marketing campaigns of a Portuguese banking institution. These marketing campaigns were based on phone calls, and often, more than one contact was required to the same client to access if the term deposit was subscribed. The data is ordered by date, from May 2008 to November 2010. The data was found at the UC Irvine Machine Learning Repository.
+
+There is a total number of 45,211 client records in this data set. The data set consists of 17 variables, including the response variable with the name 'y'. A detailed description of the predictor and outcome variables are given below:
+
+1 - age (numeric)
+
+2 - job : Job type (categorical): "admin.", "unknown", "unemployed", "management", "housemaid",        "entrepreneur", "student", "blue-collar", "self-employed", "retired", "technician", "services"
+
+3 - marital : Marital status (categorical): "married", "divorced", "single"
+  note: "divorced" means divorced or widowed
+  
+4 - education (categorical): "unknown","secondary","primary","tertiary"
+
+5 - default: Does the client have credit in default? (binary: "yes","no")
+
+6 - balance: Average yearly balance (numeric, in euros)
+
+7 - housing: Does the client have a housing loan? (binary: "yes","no")
+
+8 - loan: Does the client have a personal loan? (binary: "yes","no")
+
+9 - contact: Contact communication type (categorical): "unknown","telephone","cellular"
+
+10 - day: Last contact day of the month (numeric, discrete)
+
+11 - month: Last contact month of year (categorical): "jan", "feb", "mar", "apr", "may", "jun", "jul",  "aug", "sep", "oct", "nov", "dec"
+
+12 - duration: Last contact duration (numeric, in seconds)
+
+13 - campaign: The number of contacts performed during this campaign and for this client (numeric, discrete)
+
+14 - pdays: The number of days after the client was last contacted from a previous campaign (numeric, discrete)    note: -1 means client was not previously contacted
+
+15 - previous: The number of contacts performed before this campaign and for this client (numeric)
+
+16 - poutcome: The outcome of the previous marketing campaign (categorical): "unknown", "other",          "failure", "success"
+
+17 - y (outcome response variable): Has the client subscribed a term deposit? (binary: "yes","no")
+
+A copy of this publicly available data is stored at: https://archive.ics.uci.edu/dataset/222/bank+marketing
+
+```{r}
+# Loading in the data set
+BankMarketing = read.csv("https://pengdsci.github.io/datasets/BankMarketing/BankMarketingCSV.csv")[, -1]
+```
+
+# Exploratory Data Analysis for Feature Engineering
+
+Exploratory data analysis (EDA) for feature engineering will be done to look at the distribution of variables and observe patterns. Changes will be made to the variables based off the results, and these fixed variables will be used for future modeling. 
+
+First, the entire data set will be scanned to determine the EDA tools to use for feature engineering. Then, if there is missing values, the data will be imputted. Afterwards, if numeric or categorical variables are skewed, they will be re-categorized, where there values are split into new groups or categories. These new variables will be used in future modeling instead of the original variables. A final data set will then be created using these transformed variables. Finally, with this fixed data set, linear association and correlation between numeric variables, as well as dependency on the response variable for categorical variables, will be investigated. 
+
+```{r results=FALSE}
+#Summarized descriptive statistics for all variables in the data set
+summary(BankMarketing)
+```
+
+By looking at a few descriptive statistics for every variable of the data set, it can be observed that the distributions of some numeric and categorical variables are skewed and contain outliers. 
+
+## Missing Values of the Data Set
+
+There appears to be no missing values in this data set. Therefore, there is no need to use any methods regarding the imputation or deletion of missing values.
+
+## Assessing Distributions of the Variables
+
+Now, we will look at possibly re-categorizing the numeric variables, both continuous and discrete, and existing categorical variables of the study. These re-structured variables will be used in place of the original ones.
+
+### Discretizing Continuous Variables
+
+To deal with the outliers and skewness of certain numerical variables, such as duration of the last contact, shown in the histogram below, re-categorization will be used to divide the different values into groups. This variable should be re-categorized due to the great number of high outliers, which in turn leads to great skewness. In looking at this variable's distribution, the three groups that were created (0-180, 181-319, and 320+) seem similar enough in the frequency of client observations. This variable will be used for future models.
+
+```{r fig.align='center', fig.width=5, fig.height=5, fig.cap="Figure 1: Barplot for duration"}
+# histogram showing the distribution of the duration variable
+hist(BankMarketing$duration, xlab = "Duration", ylab = "count", main = "Durations of Last Contact")
+
+# New grouping variable for duration
+BankMarketing$grp.duration <- ifelse(BankMarketing$duration <= 180, '0-180',
+               ifelse(BankMarketing$duration >= 320, '320+', '181-319'))
+```
+
+### Grouping Categories for Discrete Numeric Variables
+
+Now, let's look at bar plots for three discrete numerical variables: campaign, pdays, and previous, and re-categorize them as well.
+
+```{r fig.align='center', fig.width=8, fig.height=8, fig.cap="Figures 2-4: Barplots for campaign, pdays, and previous"}
+par(mfrow = c(2,2))
+# barplot showing the distribution of the campaign variable
+marketcampaigns = table(BankMarketing$campaign)
+barplot(marketcampaigns, main = "Contacts During Campaign Distribution", xlab = "Number of Contacts")
+
+# barplot showing the distribution of the pdays variable
+dayspassed = table(BankMarketing$pdays)
+barplot(dayspassed, main = "Days After Last Contact Distribution", xlab = "Days After Last Contact From Campaign")
+
+# barplot showing the distribution of the previous variable
+prev = table(BankMarketing$previous)
+barplot(prev, main = "Distribution of Contacts Performed Before", xlab = "Contacts Performed Before Camp. for Client")
+```
+
+Overall, the bar plots are greatly skewed and/or weighted for certain values, so category groups should be made for each variable. 
+
+For campaign, the value of 1 contact should be its own group since it has the highest frequency of observations. The Values of 2 and 3 contacts combined have a similar frequency, so this should be a second group. The rest of the observations from 4 contacts and up together act as a third group since they more or less add up to a similar frequency as the first two groups. 
+
+As for pdays, the value of -1 for this variable acts as an indicator that a client was not previously contacted. Due to this fact, and the fact that it makes up most of the observations as well, this will be its own group. The rest of the observations were split into groups of 1-200 days and 200 days or more. The value of 200 seemed like a decent splitting point due to how the distribution looked on the bar plot.
+
+The previous variable was also split into 3 groups. The value of 0 contacts is one group since it has the most observations. The values of 1 to 3 contacts is another category since they both make a fair amount of the observations. Same goes for observations with 4 or more contacts.
+
+These grouped variables will be used in subsequent modeling. The categories for each variable are as follows:
+
+campaign: 1, 2-3, 4+
+
+pdays: -1, 1-199, 200+
+
+previous: 0, 1-3, 4+
+
+```{r}
+# New grouping variable for campaign
+BankMarketing$grp.campaign <- ifelse(BankMarketing$campaign <= 1, '1',
+               ifelse(BankMarketing$campaign >= 4, '4+', '2-3'))
+
+# New grouping variable for pdays
+BankMarketing$grp.pdays <- ifelse(BankMarketing$pdays <= -1, 'Client Not Previously Contacted', ifelse(BankMarketing$pdays >= 200, '200+', '1-199'))
+
+# New grouping variable for previous
+BankMarketing$grp.previous <- ifelse(BankMarketing$previous <= 0, '0',
+               ifelse(BankMarketing$previous > 4, '4+', '1-3'))
+```
+
+### Regrouping Categorical Variables
+
+The bar plot for the month variable also shows that the distribution of this variable is skewed in favor of warmer seasons like spring (specifically may) and summer (jun, jul, aug). As such, this categorical variable should be re-categorized by season (winter, spring, summer, fall).
+
+The job variable also has sparse categories that may affect the results of subsequent modeling. Therefore, it may be beneficial to group them in a more meaningful way to make a more powerful feature variable. They are now split between four new categories, depending on the type of job:
+
+not working (or does not currently have a job) = unemployed, unknown, retired, student
+
+Workers (standard jobs/blue-collar workers) = blue-collar, housemaids
+
+bosses (running own company) = entrepreneur, management, self-employed
+
+white-collar (white-collar type jobs) = services, admin., technician
+
+Both of these discretized variables will be used for modeling.
+
+```{r fig.align='center', fig.width=6, fig.height=6, fig.cap="Figures 5-6: Barplots of month and job Distributions"}
+par(mfrow = c(1,2))
+# barplot showing the distribution of the month variable
+durationmonth = table(BankMarketing$month)
+barplot(durationmonth, main = "Last Contact Month Dist.", xlab = "Number of Contacts by Month")
+
+# barplot showing the distribution of the job variable
+jobcategory = table(BankMarketing$job)
+barplot(jobcategory, main = "Distribution of Job Type", xlab = "Number of Clients in Each Job")
+
+# New grouping variable for month
+BankMarketing$grp.month = ifelse(BankMarketing$month == " jan", "winter", ifelse(BankMarketing$month == " feb", "winter", ifelse(BankMarketing$month == " mar", "spring", ifelse(BankMarketing$month == " apr", "spring", ifelse(BankMarketing$month == " may", "spring", ifelse(BankMarketing$month == " jun", "summer", ifelse(BankMarketing$month == " jul", "summer", ifelse(BankMarketing$month == " aug", "summer", ifelse(BankMarketing$month == " sep", "fall", ifelse(BankMarketing$month == " oct", "fall", ifelse(BankMarketing$month == " nov", "fall", "winter")))))))))))
+
+# New grouping variable for job
+BankMarketing$grp.job = ifelse(BankMarketing$job == " unknown", "not working", ifelse(BankMarketing$job == " unemployed", "not working", ifelse(BankMarketing$job == " retired", "not working", ifelse(BankMarketing$job == " blue-collar", "workers", ifelse(BankMarketing$job == " entrepreneur", "bosses", ifelse(BankMarketing$job == " housemaid", "workers", ifelse(BankMarketing$job == " management", "bosses", ifelse(BankMarketing$job == " self-employed", "bosses", ifelse(BankMarketing$job == " services", "white-collar", ifelse(BankMarketing$job == " technician", "white-collar", ifelse(BankMarketing$job == " student", "not working", "white-collar")))))))))))
+```
+
+## Pairwise Associations
+
+Now that these variables have been re-categorized, they will be kept for use in subsequent modeling instead of the original versions. It is time to look at association between numeric variables and dependency of categorical variables to the response.
+
+```{r}
+# Assembling the discretized variables and other variables to make the modeling data set
+var.names = c("age", "balance", "day", "grp.job", "marital", "education", "default", "housing", "loan", "contact", "grp.month", "grp.duration", "grp.campaign", "grp.pdays", "grp.previous", "poutcome", "y") 
+BankMarketing = BankMarketing[, var.names]
+```
+
+### Correlation of Numerical Variables
+
+A pair-wise scatter plot is used for assessing pairwise linear association between two numeric variables at a time.
+
+```{r fig.align='center', fig.width=8, fig.height=8, fig.cap="Figure 7: Pairwise Comparison Plots: Off-Diagonal (bottom-left), Stacked Density (middle-diagonal), and Correlations (top-right)"}
+# Pair-wise scatter plot for numeric variables
+ggpairs(BankMarketing,  # Data frame
+        columns = 1:3,  # Columns
+        aes(color = y,  # Color by group (cat. variable)
+            alpha = 0.5))
+```
+
+The off-diagonal plots and numbers indicate the correlation between was weak and not what was expected, None of the numerical variables appear to be significantly correlated to each other.
+
+The stacked density curve for balance shows that distributions of balance in the yes and no response categories are essentially identical. This would imply that balance might not associated with the response variable. Therefore, it should probably be removed from the modeling data set. As for the other variables, the curves are mostly but not completely overlapped, this means there is correlation between each of these numeric variables and the response variable (y), but it's not a lot.
+
+There is almost no correlation between day and the other variables, but there is a somewhat better correlation between age and balance, even though it is still very weak.
+
+### Dependency of Categorical Variables
+
+These mosaic plots help show whether clients subscribing a term deposit is independent of the categorical variables. Variables that are independent should be excluded in future models.
+
+```{r fig.align='center', fig.width=6, fig.height=8, fig.cap="Figures 8-11: Mosaic Plot for job, marital, education, poutcome"}
+# Mosaic plots to show categorical variable dependency to the response.
+par(mfrow = c(2,2))
+mosaicplot(grp.job ~ y, data=BankMarketing,col=c("Blue","Red"), main="job vs term deposit")
+mosaicplot(marital ~ y, data=BankMarketing,col=c("Blue","Red"), main="marital vs term deposit")
+mosaicplot(education ~ y, data=BankMarketing,col=c("Blue","Red"), main="education vs term deposit")
+mosaicplot(poutcome ~ y, data=BankMarketing,col=c("Blue","Red"), main="poutcome vs term deposit")
+```
+
+```{r fig.align='center', fig.width=6, fig.height=8, fig.cap="Figures 12-15: Mosaic Plot for housing, loan, contact, and month"}
+# Mosaic plots to show categorical variable dependency to the response.
+par(mfrow = c(2,2))
+mosaicplot(housing ~ y, data=BankMarketing,col=c("Blue","Red"), main="housing vs term deposit")
+mosaicplot(loan ~ y, data=BankMarketing,col=c("Blue","Red"), main="loan vs term deposit")
+mosaicplot(contact ~ y, data=BankMarketing,col=c("Blue","Red"), main="contact vs term deposit")
+mosaicplot(grp.month ~ y, data=BankMarketing,col=c("Blue","Red"), main="month vs term deposit")
+```
+
+```{r fig.align='center', fig.width=6, fig.height=8, fig.cap="Figures 16-19: Mosaic Plot for duration, campaign, pdays, and previous"}
+# Mosaic plots to show categorical variable dependency to the response.
+par(mfrow = c(2,2))
+mosaicplot(grp.duration ~ y, data=BankMarketing,col=c("Blue","Red"), main="duration vs term deposit")
+mosaicplot(grp.campaign ~ y, data=BankMarketing,col=c("Blue","Red"), main="campaign vs term deposit")
+mosaicplot(grp.pdays ~ y, data=BankMarketing,col=c("Blue","Red"), main="pdays vs term deposit")
+mosaicplot(grp.previous ~ y, data=BankMarketing,col=c("Blue","Red"), main="previous vs term deposit")
+```
+
+The mosaic plots for contact, pdays, and education show negative association between contact communication type, client education, and number of days passed after the client was last contacted from a previous campaign. Most of these mosaic plots show that whether the client subscribed a term deposit is not independent of times of these variables because the proportion of subscription cases in individual categories is not identical. 
+
+```{r fig.align='center', fig.width=6, fig.height=8, fig.cap="Figure 20: Mosaic Plot for default"}
+# Mosaic plot to show default dependency to the response.
+mosaicplot(default ~ y, data=BankMarketing,col=c("Blue","Red"), main="default vs term deposit")
+```
+
+```{r results=FALSE}
+table(BankMarketing$default)
+```
+
+It should be said that the mosaic plot for the default variable showed the yes category was extremely small compared to the no category. Only 815 (1.8%) clients of the 45211 total had credit in default, according to this data. This category of the default variable having only a few subscribers could cause instability with estimating model parameters. The same can be sadi for the poutcome variable, which also has a small category for "other". Therefore, it might be better to not include these two variable in subsequent modeling.
+
+# Predictive Modeling with Logistic Regression
+
+In this section, the revised data set created through the EDA done above will be used to run different logistic regression models. An optimal final model will be found from these models, which will be used to calculate probabilities for predicting whether or not a client has subscribed a term deposit after direct marketing campaigns.
+
+The variable, y, which tells whether a client has subscribed a term deposit, acts as the binary reponse variable of all the models. The rest of the variables, including the new re-categorized variables, of the revised data set act as the predictor variables that will possibly affect the response.
+
+## Methodology for Modeling
+
+In order to perform proper modeling, some categorical and binary variables had to be changed, including the response (y) and the ones changed in the EDA, to have numerical labels, thereby making them easier to use for modeling.
+
+The first logistic regression model that will be built is an initial full model that contains all predictors variables of the data set. Automatic variable selection will then be used to find a final model. In looking at the p-values of the variables in the initial model, those that are insignificant at the 0.05 level will be dropped. The variables remaining that are either statistically significant or important for the model will be used to create a sort of reduced model. A third and final model, that is between the full and reduced models, will then be found. Performance of predictive power will be analyzed for all predictor variables as well as their association to the response. Finally, this final model will be used to calculate predictive probability for values of the response variable. When values of predictor values are entered, the predicted value of whether or not a client has subscribed a term deposit (either Yes or No) is given.
+
+## Turning Text Categorical and Binary Variables into Disrete Numerical Variables for Modeling
+
+The values of the response variable, y, (yes/no), along with certain binary and categorical variables, must be changed to have numerical labels here. This is the only way the logistic regression models can be created properly. The labels are as follows:
+
+y (response): 0=no, 1=yes
+
+grp.job: 0=not working, 1=workers, 2=bosses, 3=white-collar
+
+marital: 0=divorced, 1=single, 2=married
+
+education: 0=unknown, 1=primary, 2=secondary, 3=tertiary
+
+housing: 0=no, 1=yes
+
+loan: 0=no, 1=yes
+
+contact: 0=unknown, 1=telephone, 2=cellular
+
+grp.month: 0=winter, 1=spring, 2=summer, 3=fall
+
+grp.duration: 0=(0-180), 1=(181-319), 2=320+
+
+grp.campaign: 0=1, 1=(2-3), 2=4+
+
+grp.pdays: 0=Client Not Previously Contacted, 1=(1-199), 2=200+
+
+grp.previous: 0=0, 1=(1-3), 2=4+
+
+```{r}
+# Making a new modeling data set without the insignificant variables
+var.names = c("age", "day", "grp.job", "marital", "education", "housing", "loan", "contact", "grp.month", "grp.duration", "grp.campaign", "grp.pdays", "grp.previous", "y") 
+BankMarketingCampaign = BankMarketing[, var.names]
+
+# Create numerical value labels for categorical variables
+BankMarketingCampaign$y <- factor(BankMarketingCampaign$y, levels = c(" no", " yes"), labels = c("0", "1"))
+
+BankMarketingCampaign$grp.job <- factor(BankMarketingCampaign$grp.job, levels = c("not working", "workers", "bosses", "white-collar"), labels = c("0", "1", "2", "3"))
+
+BankMarketingCampaign$marital <- factor(BankMarketingCampaign$marital, levels = c(" divorced", " single", " married"), labels = c("0", "1", "2"))
+
+BankMarketingCampaign$education <- factor(BankMarketingCampaign$education, levels = c(" unknown", " primary", " secondary", " tertiary"), labels = c("0", "1", "2", "3"))
+  
+BankMarketingCampaign$housing <- factor(BankMarketingCampaign$housing, levels = c(" no", " yes"), labels = c("0", "1"))
+  
+BankMarketingCampaign$loan <- factor(BankMarketingCampaign$loan, levels = c(" no", " yes"), labels = c("0", "1"))
+
+BankMarketingCampaign$contact <- factor(BankMarketingCampaign$contact, levels = c(" unknown", " telephone", " cellular"), labels = c("0", "1", "2"))
+
+BankMarketingCampaign$grp.month <- factor(BankMarketingCampaign$grp.month, levels = c("winter", "spring", "summer", "fall"), labels = c("0", "1", "2", "3"))
+
+BankMarketingCampaign$grp.duration <- factor(BankMarketingCampaign$grp.duration, levels = c("0-180", "181-319", "320+"), labels = c("0", "1", "2"))
+  
+BankMarketingCampaign$grp.campaign <- factor(BankMarketingCampaign$grp.campaign, levels = c("1", "2-3", "4+"), labels = c("0", "1", "2"))
+  
+BankMarketingCampaign$grp.pdays <- factor(BankMarketingCampaign$grp.pdays, levels = c("Client Not Previously Contacted", "1-199", "200+"), labels = c("0", "1", "2"))
+  
+BankMarketingCampaign$grp.previous <- factor(BankMarketingCampaign$grp.previous, levels = c("0", "1-3", "4+"), labels = c("0", "1", "2"))
+```
+
+## Building the Three Candidate Logistic Regression Models
+
+The full model containing all usable predictor variables of the data set will be made first, with the variable, y (whether or not a client has subscribed a term deposit), as the response. The variables balance, default, and poutcome are not included since the EDA showed that removing them from the model might help the results.
+
+```{r, fig.cap="Initial Model Summary Table"}
+# Create the initial full model
+initial.model = glm(y ~ age + day + grp.job + marital + education + housing + loan + contact + grp.month + grp.duration + grp.campaign + grp.pdays + grp.previous, family = binomial, data = BankMarketingCampaign)
+coefficient.table = summary(initial.model)$coef
+kable(coefficient.table, caption = "Significance tests of logistic regression model")
+```
+
+It appears that some p-values in the above significance test table are bigger than 0.5 for some levels of predictor variables, but not all.
+
+Some of the insignificant predictor variables will now be dropped, using automatic variable selection, in finding the reduced model. The final best model, outlined below, will be a model that is between the full and reduced models. In this case, it seems to contain all the predictor variables used for the initial model as well.
+
+```{r, fig.cap="Final Model Summary Table"}
+# Creating the reduced and final models
+full.model = initial.model  # the *biggest model* that includes all predictor variables
+reduced.model = glm(y ~ day + grp.job + marital + housing + loan + contact + grp.duration + grp.campaign + grp.previous, family = binomial, data = BankMarketingCampaign)
+final.model =  step(full.model, 
+                    scope=list(lower=formula(reduced.model),upper=formula(full.model)),
+                    data = BankMarketingCampaign, 
+                    direction = "backward",
+                    trace = 0)   # trace = 0: suppress the detailed selection process
+final.model.coef = summary(final.model)$coef
+kable(final.model.coef, caption = "Summary table of significant tests")
+```
+
+## Predictive Probability Analysis for Clients Subscribing Term Deposits
+
+Now that a final model has been created, it will be used to predict whether or not a client has subscribed a term deposit based on given values of the predictor variables in the final model associated with two clients. A threshold probability of 0.5 is used to predict the response value.
+
+The predicted answers for whether or not the client has subscribed a term deposit for two clients with the following information will be attached to the two new data records. The first banking client will subscribe a term deposit while the second one will not.
+
+```{r, fig.cap="Predicted Value of Response Using Cut-Off Probability"}
+# Predicting Response Value for Banking Client Given Variable Values for the Final Model
+mynewdata = data.frame(age=c(58,44),
+                       day = c(5,5),
+                       grp.job = c("1","1"),
+                       marital = c("2","1"),
+                       education = c("3","1"),
+                       housing = c("1","0"),
+                       loan = c("0","0"),
+                       contact = c("1","0"),
+                       grp.month = c("3","2"),
+                       grp.duration = c("2","1"),
+                       grp.campaign = c("0","0"),
+                       grp.pdays = c("1","2"),
+                       grp.previous = c("1","0"))
+pred.success.prob = predict(final.model, newdata = mynewdata, type="response")
+
+## threshold probability
+cut.off.prob = 0.5
+pred.response = ifelse(pred.success.prob > cut.off.prob, 1, 0)  # This predicts the response
+
+# Add the new predicted response to Mynewdata
+mynewdata$Pred.Response = pred.response
+kable(mynewdata, caption = "Predicted Value of Response With Given Cut-Off Probability")
+```
+
+# Assessing the Logistic Regression Models With Different Model Performance Measures
+
+Next, the data set used for modeling in the previous section will be split into two data sets, training and testing, for training models and testing the final model, respectively. Candidate models, one training model and one testing model, will be made from these data sets. Using cross-validation, an optimal cut-off probability will be found from these models. This cut-off will be used with the testing data set to look at performance and accuracy of the model. The data will be split into sub-intervals based on cut-offs, which will then be used to report local measures of performance for the model, including sensitivity and specificity. Global measures, mainly ROC curves, will also be created for all three models to judge model performance.
+
+## Finding Model Preformance Accuracy with Cross-Validation
+
+### Splitting the Data Into Training and Testing Data Sets
+
+With the sample size being so large, we will randomly split the overall data set into two data sets. 70% of the data will be put in a training data set for training and validating models. The other 30% goes into a testing data set for testing the final model. The value labels of the response (yes/no) used for testing and validation data will be removed when calculating the accuracy measures later.
+
+```{r}
+## Recode response variable: yes = 1 and no = 0
+yes.id = which(BankMarketingCampaign$y == "1") 
+no.id = which(BankMarketingCampaign$y == "0")
+
+## Creating the training and testing data sets
+BankMarketingCampaign$y.subscribe = 1
+BankMarketingCampaign$y.subscribe[no.id] = 0
+var.names = c("age", "day", "grp.job", "marital","education","housing","loan","contact","grp.month",    "grp.duration","grp.campaign","grp.pdays","grp.previous", "y.subscribe" )
+BankMarketingModeling = BankMarketingCampaign[, var.names]
+nn = dim(BankMarketingModeling)[1]
+train.id = sample(1:nn, round(nn*0.7), replace = FALSE) 
+####
+training = BankMarketingModeling[train.id,]
+testing = BankMarketingModeling[-train.id,]
+```
+
+### Finding the Optimal Cut-off Probability
+
+Now a sequence of 20 candidate cut-off probabilities will be defined. Then, a 5-fold cross-validation will be used to identify the optimal cut-off probability for the final prediction model. The first candidate model, the training model, will be created in the process.
+
+```{r fig.align= 'center', fig.cap="Figure 21: 5-fold CV Performance Optimal Cut-Off Probability Plot"}
+# Finding the Optimal cut-off Probability
+n0 = dim(training)[1]/5
+cut.0ff.prob = seq(0,1, length = 22)[-c(1,22)]        # candidate cut off prob
+pred.accuracy = matrix(0,ncol=20, nrow=5, byrow = T)  # null vector for storing prediction accuracy
+## 5-fold CV
+for (i in 1:5){
+  valid.id = ((i-1)*n0 + 1):(i*n0)
+  valid.data = training[valid.id,]
+  train.data = training[-valid.id,]
+  train.model = glm(y.subscribe ~ age + day + grp.job + marital + education + housing + loan + contact + grp.month + grp.duration + grp.campaign + grp.pdays + grp.previous, family = binomial(link = logit), data = train.data)
+  pred.prob = predict.glm(train.model, valid.data, type = "response")
+  # define confusion matrix and accuracy
+  for(j in 1:20){
+    #pred.subscribe = rep(0,length(pred.prob))
+    valid.data$pred.subscribe = as.numeric(pred.prob >cut.0ff.prob[j])
+    a11 = sum(valid.data$pred.subscribe == valid.data$y.subscribe)
+    pred.accuracy[i,j] = a11/length(pred.prob)
+  }
+}
+###  
+
+avg.accuracy = apply(pred.accuracy, 2, mean)
+max.id = which(avg.accuracy ==max(avg.accuracy ))
+
+### visual representation
+tick.label = as.character(round(cut.0ff.prob,2))
+plot(1:20, avg.accuracy, type = "b",
+     xlim=c(1,20), 
+     ylim=c(0.5,1), 
+     axes = FALSE,
+     xlab = "Cut-off Probability",
+     ylab = "Accuracy",
+     main = "5-fold CV performance"
+     )
+axis(1, at=1:20, label = tick.label, las = 2)
+axis(2)
+segments(max.id, 0.5, max.id, avg.accuracy[max.id], col = "red")
+text(max.id, avg.accuracy[max.id]+0.03, as.character(round(avg.accuracy[max.id],4)), col = "red", cex = 0.8)
+```
+
+The above figure indicates that the optimal cut-off probability that yields the best accuracy is 0.62.
+
+### Model Performance Reporting Test
+
+This subsection is focused on reporting performance of the model using the test data set. The testing model needs to be fit to the original training data to find the regression coefficients. The holdout testing sample will be used to find the accuracy.
+
+```{r fig.align= 'center', fig.cap="Figure 22: Model Accuracy Value"}
+## Creation of testing model
+test.model = glm(y.subscribe ~ age + day + grp.job + marital + education + housing + loan + contact + grp.month + grp.duration + grp.campaign + grp.pdays + grp.previous, family = binomial(link = logit), data = training)
+newBankingTestingData = data.frame(age= testing$age, day= testing$day, grp.job= testing$grp.job, marital= testing$marital, education= testing$education, housing= testing$housing, loan= testing$loan, contact= testing$contact, grp.month= testing$grp.month, grp.duration= testing$grp.duration, grp.campaign= testing$grp.campaign, grp.pdays= testing$grp.pdays, grp.previous= testing$grp.previous)
+
+pred.prob.test = predict.glm(test.model, newBankingTestingData, type = "response")
+
+## Assessing Model Accuracy
+testing$test.subscribe = as.numeric(pred.prob.test > 0.62)
+a11 = sum(testing$test.subscribe == testing$y.subscribe)
+test.accuracy = a11/length(pred.prob.test)
+kable(as.data.frame(test.accuracy), align='c')
+```
+
+The accuracy is around 88-89%. This indicates that there is no under-fitting for the final logistic regression model.
+
+## Calculating Local and Global ROC Performance Metrics for Logistic Predictive Models
+
+### Local Performance Measures Analysis
+
+Using the optimal cut-off probability of 0.62, we will now report the local measures using the testing data set. This includes specificity and sensitivity based on each of these cut-offs for the 20 sub-intervals.
+
+```{r, fig.cap="Figure 23: Local Sensitivity and Specificity Metrics for Model"}
+# Looking at sensitivity and specificity performance measurements
+test.model = glm(y.subscribe ~ age + day + grp.job + marital + education + housing + loan + contact + grp.month + grp.duration + grp.campaign + grp.pdays + grp.previous, family = binomial(link = logit), data = training)
+newBankingTestingData = data.frame(age= testing$age, day= testing$day, grp.job= testing$grp.job, marital= testing$marital, education= testing$education, housing= testing$housing, loan= testing$loan, contact= testing$contact, grp.month= testing$grp.month, grp.duration= testing$grp.duration, grp.campaign= testing$grp.campaign, grp.pdays= testing$grp.pdays, grp.previous= testing$grp.previous)
+
+pred.prob.test.full = predict.glm(test.model, newBankingTestingData, type = "response")
+testing$test.subscribe = as.numeric(pred.prob.test > 0.62)
+
+### components for defining various measures
+p0.a0 = sum(testing$test.subscribe ==0 & testing$y.subscribe ==0)
+p0.a1 = sum(testing$test.subscribe ==0 & testing$y.subscribe ==1)
+p1.a0 = sum(testing$test.subscribe ==1 & testing$y.subscribe ==0)
+p1.a1 = sum(testing$test.subscribe ==1 & testing$y.subscribe ==1)
+###
+sensitivity = p1.a1 / (p1.a1 + p0.a1)
+specificity = p0.a0 / (p0.a0 + p1.a0)
+###
+precision = p1.a1 / (p1.a1 + p1.a0)
+recall = sensitivity
+F1 = 2*precision*recall/(precision + recall)
+metric.list = cbind(sensitivity = sensitivity, 
+                    specificity = specificity, 
+                    precision = precision,
+                    recall = recall,
+                    F1 = F1)
+kable(as.data.frame(metric.list), align='c', caption = "Local Performance Metrics")
+```
+
+The sensitivity indicates the probability of those clients who are said to have subscribed a term deposit at the banking institution out of those who actually did is about 8-12%. The specificity indicates the probability of those clients who are said to have not subscribed a term deposit at the banking institution out of those who actually did not is about 99%. 
+
+### ROC Global Measure Analysis
+
+For the last part of this section, a ROC (receiver operating characteristic) curve will be plotted by selecting a sequence of decision thresholds and calculating corresponding sensitivity and specificity. 
+
+```{r fig.align='center', fig.width=5, fig.height=5, fig.cap="Figure 24: ROC Curves for the 3 Logistic Regression Models"}
+# Creating ROC curves for sensitivity and (1-specificity) for all 3 models
+## Full Model
+cut.off.seq = seq(0, 1, length = 100)
+sensitivity.vec.full = NULL
+specificity.vec.full = NULL
+### 
+training.model.full = glm(y.subscribe ~ age + day + grp.job + marital + education + housing + loan + contact + grp.month + grp.duration + grp.campaign + grp.pdays + grp.previous, family = binomial(link = logit), data = training)
+newBankTrainingData.full = data.frame(age= training$age, day= training$day, grp.job= training$grp.job, marital= training$marital, education= training$education, housing= training$housing, loan= training$loan, contact= training$contact, grp.month= training$grp.month, grp.duration= training$grp.duration, grp.campaign= training$grp.campaign, grp.pdays= training$grp.pdays, grp.previous= training$grp.previous)
+pred.prob.train.full = predict.glm(training.model.full, newBankTrainingData.full, type = "response")
+for (i in 1:100){
+  training$train.subscribe = as.numeric(pred.prob.train.full > cut.off.seq[i])
+### components for defining various measures
+TN = sum(training$train.subscribe == 0 & training$y.subscribe == 0)
+FN = sum(training$train.subscribe == 0 & training$y.subscribe == 1)
+FP = sum(training$train.subscribe == 1 & training$y.subscribe == 0)
+TP = sum(training$train.subscribe == 1 & training$y.subscribe == 1)
+###
+sensitivity.vec.full[i] = TP / (TP + FN)
+specificity.vec.full[i] = TN / (TN + FP)
+}
+one.minus.spec.full = 1 - specificity.vec.full
+sens.vec.full = sensitivity.vec.full
+## A better approx of ROC, need library {pROC}
+  prediction.full = pred.prob.train.full
+  category.full = training$y.subscribe == 1
+  ROCobj.full <- roc(category.full, prediction.full)
+  AUCfull = round(auc(ROCobj.full),4)
+  
+## Reduced Model
+cut.off.seq = seq(0, 1, length = 100)
+sensitivity.vec.reduced = NULL
+specificity.vec.reduced = NULL
+### 
+training.model.reduced = glm(y.subscribe ~ day + grp.job + marital + housing + loan + contact + grp.duration + grp.campaign + grp.previous, family = binomial(link = logit), data = training)
+newBankTrainingData.reduced = data.frame(day= training$day, grp.job= training$grp.job, marital= training$marital, housing= training$housing, loan= training$loan, contact= training$contact, grp.duration= training$grp.duration, grp.campaign= training$grp.campaign, grp.previous= training$grp.previous)
+pred.prob.train.reduced = predict.glm(training.model.reduced, newBankTrainingData.reduced, type = "response")
+for (i in 1:100){
+  training$train.subscribe = as.numeric(pred.prob.train.reduced > cut.off.seq[i])
+### components for defining various measures
+TN.reduced = sum(training$train.subscribe == 0 & training$y.subscribe == 0)
+FN.reduced = sum(training$train.subscribe == 0 & training$y.subscribe == 1)
+FP.reduced = sum(training$train.subscribe == 1 & training$y.subscribe == 0)
+TP.reduced = sum(training$train.subscribe == 1 & training$y.subscribe == 1)
+###
+sensitivity.vec.reduced[i] = TP.reduced / (TP.reduced + FN.reduced)
+specificity.vec.reduced[i] = TN.reduced / (TN.reduced + FP.reduced)
+}
+one.minus.spec.reduced = 1 - specificity.vec.reduced
+sens.vec.reduced = sensitivity.vec.reduced
+## A better approx of ROC, need library {pROC}
+  prediction.reduced = pred.prob.train.reduced
+  category.reduced = training$y.subscribe == 1
+  ROCobj.reduced <- roc(category.reduced, prediction.reduced)
+  AUCreduced = round(auc(ROCobj.reduced),4)
+  
+# Final Model
+cut.off.seq = seq(0, 1, length = 100)
+sensitivity.vec.final = NULL
+specificity.vec.final = NULL
+### 
+training.model.final = glm(y.subscribe ~ age + day + grp.job + marital + education + housing + loan + contact + grp.month + grp.duration + grp.campaign + grp.pdays + grp.previous, family = binomial(link = logit), data = training)
+newBankTrainingData.final = data.frame(age= training$age, day= training$day, grp.job= training$grp.job, marital= training$marital, education= training$education, housing= training$housing, loan= training$loan, contact= training$contact, grp.month= training$grp.month, grp.duration= training$grp.duration, grp.campaign= training$grp.campaign, grp.pdays= training$grp.pdays, grp.previous= training$grp.previous)
+pred.prob.train.final = predict.glm(training.model.final, newBankTrainingData.final, type = "response")
+for (i in 1:100){
+  training$train.subscribe = as.numeric(pred.prob.train.final > cut.off.seq[i])
+### components for defining various measures
+TN.final = sum(training$train.subscribe == 0 & training$y.subscribe == 0)
+FN.final = sum(training$train.subscribe == 0 & training$y.subscribe == 1)
+FP.final = sum(training$train.subscribe == 1 & training$y.subscribe == 0)
+TP.final = sum(training$train.subscribe == 1 & training$y.subscribe == 1)
+###
+sensitivity.vec.final[i] = TP.final / (TP.final + FN.final)
+specificity.vec.final[i] = TN.final / (TN.final + FP.final)
+}
+one.minus.spec.final = 1 - specificity.vec.final
+sens.vec.final = sensitivity.vec.final
+## A better approx of ROC, need library {pROC}
+  prediction.final = pred.prob.train.final
+  category.final = training$y.subscribe == 1
+  ROCobj.final <- roc(category.final, prediction.final)
+  AUCfinal = round(auc(ROCobj.final),4)
+  
+## Visual Representation of all 3 ROCs
+par(pty = "s")   # make a square figure
+plot(one.minus.spec.full, sens.vec.full, type = "l", xlim = c(0,1), xlab ="1 - Specificity", ylab = "Sensitivity", main = "ROC Curves of Logistic Regression Models", lwd = 2, col = "blue")
+lines(one.minus.spec.reduced, sens.vec.reduced, col = "green")
+lines(one.minus.spec.final, sens.vec.final, col = "orange")
+segments(0,0,1,1, col = "red", lty = 2, lwd = 2)
+
+#AUCfull = round(sum(sens.vec.full*(one.minus.spec.full[-101]-one.minus.spec.full[-1])),4)
+#AUCreduced = round(sum(sens.vec.reduced*(one.minus.spec.reduced[-101]-one.minus.spec.reduced[-1])),4)
+#AUCfinal = round(sum(sens.vec.final*(one.minus.spec.final[-101]-one.minus.spec.final[-1])),4)
+text(0.8, 0.5, paste("AUC = ", AUCfull), col = "blue")
+text(0.8, 0.4, paste("AUC = ", AUCreduced), col = "green")
+text(0.8, 0.3, paste("AUC = ", AUCfinal), col = "orange")
+legend("bottomright", c("ROC of the Full Model", "ROC of the Reduced Model", "ROC of the Final Model"), lty=c(1,2), col = c("blue", "green", "orange"), bty = "n", cex = 0.8)
+```
+
+The above ROC curves indicate that the underlying predictive models are all better than the random guess (in red) since the area under the curve (AUC) is significantly greater than 0.5 for all curves. Since all these AUCs are also significantly greater than 0.65, this means the predictive power of all three underlying models is acceptable.
+
+The area under the curve (AUC) for the reduced model ROC curve is less than the other two graphs. Higher AUC indicates the model for that curve is better. Therefore, the reduced model is worse than the other two.
+
+As for the other two models, they more or less share the same curve since both models contain all feature variables used in the initial model. Out of these other two models, the final model works better compared to the initial model. This model has been proven to be accurate in modeling performance, has high specificity, and its ROC curve is remaining away from the 45 degrees mark. Plus, the AUC is fairly high, even if the initial model has the same one.
+
+# Modeling With the Neural Network Method
+
+Now that one predictive model has been created, another model, a single-layer neural network model will be created and compared to the first model. Perceptron, an artificial neural network, is used in this model. Every input variable has a weight, like a coefficient in regression, and a bias term is also added to these inputs to give perceptron with flexibility, acting as a sort of regression intercept. The output is binary, either 0 or 1, determined by an activation function made up of the inputs and bias.
+
+Training and testing data sets and models will be made once again for the neural network model. From them, a final model will be constructed and plotted to show back-propagation of the neural network model. Also, like with the previous model, cross-validation will be used for finding an optimal cut-off probability for assessing model performance and accuracy. Lastly, an ROC curve will be made for the model to look at predictive power and compare it to the other model.
+
+## Converting the Variables to Numeric Form
+
+First off, the neuralnet library in R requires feature variables to be in numeric form. Numerical feature variables should be scaled in order to be normalized for the model. Categorical variables become explicitly defined dummy variables. We want to be able to find all names for the feature variables and write them in the neural network model formula. The data set here will not include the numerical labels for the categorical variables as with the previous model.
+
+```{r}
+# Assembling the discretized variables and other variables to make the modeling data set
+var.names = c("age", "day", "grp.job", "marital", "education", "housing", "loan", "contact", "grp.month", "grp.duration", "grp.campaign", "grp.pdays", "grp.previous", "y") 
+BankMarketingNeural = BankMarketing[, var.names]
+```
+
+The numerical variables of age and day are scaled here. The unitless variable scale used is:
+
+$$
+scaled.var = \frac{orig.var - \min(orig.var)}{\max(orig.var)-\min(orig.var)}
+$$
+
+```{r}
+#re-scaling the numerical variables
+BankMarketingNeural$age = (BankMarketingNeural$age-min(BankMarketingNeural$age))/(max(BankMarketingNeural$age)-min(BankMarketingNeural$age))
+BankMarketingNeural$day = (BankMarketingNeural$day-min(BankMarketingNeural$day))/(max(BankMarketingNeural$day)-min(BankMarketingNeural$day))
+```
+
+As for the categorical variables, using the model.matrix() function, the names of all these feature variables, and their levels, used in the model will be extracted. There are naming issues in the dummy variables, so they should be renamed, by erasing spaces or special characters, to properly build the neural network model.
+
+```{r results=FALSE}
+# Creating a model.matrix() and looking at the names of the variable columns
+BankingMtx = model.matrix(~ ., data = BankMarketingNeural)
+colnames(BankingMtx)
+
+#Renaming the categorical variable columns in the model matrix
+colnames(BankingMtx)[4] <- "grp.jobNotWorking"
+colnames(BankingMtx)[5] <- "grp.jobWhiteCollar"
+colnames(BankingMtx)[6] <- "grp.jobWorkers"
+colnames(BankingMtx)[7] <- "maritalMarried"
+colnames(BankingMtx)[8] <- "maritalSingle"
+colnames(BankingMtx)[9] <- "education2nd"
+colnames(BankingMtx)[10] <- "education3rd"
+colnames(BankingMtx)[11] <- "educationUnknown"
+colnames(BankingMtx)[12] <- "housingYes"
+colnames(BankingMtx)[13] <- "loanYes"
+colnames(BankingMtx)[14] <- "contactTelephone"
+colnames(BankingMtx)[15] <- "contactUnknown"
+colnames(BankingMtx)[16] <- "grp.monthSpring"
+colnames(BankingMtx)[17] <- "grp.monthSummer"
+colnames(BankingMtx)[18] <- "grp.monthWinter"
+colnames(BankingMtx)[19] <- "grp.duration0To180"
+colnames(BankingMtx)[20] <- "grp.duration320Plus"
+colnames(BankingMtx)[21] <- "grp.campaign1"
+colnames(BankingMtx)[22] <- "grp.campaign4Plus"
+colnames(BankingMtx)[23] <- "grp.pdays200Plus"
+colnames(BankingMtx)[24] <- "grp.pdaysCNPC"
+colnames(BankingMtx)[25] <- "grp.previous0"
+colnames(BankingMtx)[26] <- "grp.previous4Plus"
+colnames(BankingMtx)[27] <- "yYes"
+```
+
+## Building and Plotting the Neural Network Model
+
+Here the neural network model is defined using the changed names of the variables in the matrix. The data is then split again into two data sets. 70% is for training the neural network model and 30% is for testing. Using these two new data sets, a single-layer neural network model is created using the neuralnet() function.
+
+```{r results=FALSE}
+# Defining the neural network model
+columnNames = colnames(BankingMtx)
+columnList = paste(columnNames[-c(1,length(columnNames))], collapse = "+")
+columnList = paste(c(columnNames[length(columnNames)],"~",columnList), collapse="")
+modelNeuralFormula = formula(columnList)
+modelNeuralFormula
+
+# Creating the training and testing data sets for creating the model
+n = dim(BankingMtx)[1]
+testID = sample(1:n, round(n*0.7), replace = FALSE)
+testData = BankingMtx[testID,]
+trainData = BankingMtx[-testID,]
+
+# Creating the single-layer neural network and model
+NetworkModel = neuralnet(modelNeuralFormula,
+                         data = trainData,
+                         hidden = 1,       # single layer neural network
+                         rep = 1,         # number of replicates in training neural network
+                         threshold = 0.01, # threshold for partial derivatives as stopping criteria.
+                         learningrate = 0.1,  # user selected rate
+                         algorithm = "rprop+"
+                         )
+kable(NetworkModel$result.matrix)
+```
+
+The following is a plot showing the architecture of this single-layer neural network, known as perceptron.
+
+```{r fig.align='center', fig.width=8, fig.height=8,  fig.cap="Figure 25: Single-Layer Backpropagation Neural Network Model for Banking Institution Client Term Deposit Subscription"}
+# Plot for neural network model
+plot(NetworkModel, rep="best")
+```
+
+## Testing Performance of the Neural Network Model
+
+### Finding the Optimal Cut-Off Score Using Cross-Validation
+
+Here, optimal cut-off scores for the binary decision can be obtained through cross-validation. This, along with the use of hyper-parameters, will be used to assess model accuracy and performance.
+
+```{r fig.align= 'center', fig.cap="Figure 26: Optimal Cut-Off Probability for the Neural Network Model"}
+# Looking at optimal cut-off probabilities with cross-validation
+n0 = dim(trainData)[1]/5
+cut.off.score = seq(0,1, length = 22)[-c(1,22)]   # candidate cut off prob
+pred.accuracy = matrix(0,ncol=20, nrow=5, byrow = T)  # null vector for storing prediction accuracy
+
+## 5-fold CV
+for (i in 1:5){
+  valid.id = ((i-1)*n0 + 1):(i*n0)
+  valid.data = trainData[valid.id,]
+  train.data = trainData[-valid.id,]
+  ####
+  train.model = neuralnet(modelNeuralFormula,
+                         data = train.data,
+                         hidden = 1,          # single layer NN
+                         rep = 1,         # number of replicates in training NN
+                         threshold = 0.01,  # threshold for partial derivatives as stopping criteria.
+                         learningrate = 0.1,   # user selected rate
+                         algorithm = "rprop+"
+                         )
+    pred.nn.score = predict(NetworkModel, valid.data)
+    for(j in 1:20){
+    #pred.status = rep(0,length(pred.nn.score))
+    pred.status = as.numeric(pred.nn.score > cut.off.score[j])
+    a11 = sum(pred.status == valid.data[,17])
+    pred.accuracy[i,j] = a11/length(pred.nn.score)
+  }
+}
+###  
+avg.accuracy = apply(pred.accuracy, 2, mean)
+max.id = which(avg.accuracy ==max(avg.accuracy ))
+
+### visual representation
+tick.label = as.character(round(cut.off.score,2))
+plot(1:20, avg.accuracy, type = "b",
+     xlim=c(1,20), 
+     ylim=c(0.5,1), 
+     axes = FALSE,
+     xlab = "Cut-off Score",
+     ylab = "Accuracy",
+     main = "5-fold CV performance"
+     )
+axis(1, at=1:20, label = tick.label, las = 2)
+axis(2)
+segments(max.id, 0.5, max.id, avg.accuracy[max.id], col = "red")
+text(max.id, avg.accuracy[max.id]+0.03, as.character(round(avg.accuracy[max.id],4)), col = "red", cex = 0.8)
+```
+
+The above figure indicates that the optimal cut-off probability that yields the best accuracy is around 0.86.
+
+### Testing Model Accuracy and Performance
+
+This optimal cut-off probability and testing data will now be used to look at the accuracy, like with the previous model, and confusion matrix of the model.
+
+```{r results=FALSE}
+#Testing resulting output and finding model accuracy and confusion matrix
+nn.results <- predict(NetworkModel, testData)
+results <- data.frame(actual = testData[,27], prediction = nn.results > .86)
+confMatrix = table(results$prediction, results$actual)               # confusion matrix
+accuracy=sum(results$actual == results$prediction)/length(results$prediction)
+list(confusion.matrix = confMatrix, accuracy = accuracy)       
+```
+
+```{r}
+kable(as.data.frame(accuracy), align='c')
+```
+
+The accuracy is 88%. This accuracy indicates that there is no under-fitting for the final model. This is quite similar compared to the logistic regression model from the previous section.
+
+The sensitivity indicates the probability of those clients who are said to have subscribed a term deposit at the banking institution out of those who actually did is 100%. The specificity indicates the probability of those clients who are said to have not subscribed a term deposit at the banking institution out of those who actually did not is 0%. 
+
+## ROC Analysis
+
+Now a ROC will be constructed for the neural network model based on the training data set.
+
+```{r fig.align='center', fig.width=5, fig.height=5, fig.cap="Figure 28: ROC Curve for the Neural Network Model"}
+nn.results = predict(NetworkModel, trainData)  # Keep in mind that trainDat is a matrix!
+cut0 = seq(0,1, length = 20)
+SenSpe = matrix(0, ncol = length(cut0), nrow = 2, byrow = FALSE)
+for (i in 1:length(cut0)){
+    a = sum(trainData[,"yYes"] == 1 & (nn.results > cut0[i]))
+    d = sum(trainData[,"yYes"] == 0 & (nn.results < cut0[i]))
+    b = sum(trainData[,"yYes"] == 0 & (nn.results > cut0[i]))    
+    c = sum(trainData[,"yYes"] == 1 & (nn.results < cut0[i]))   
+    sen = a/(a + c)
+    spe = d/(b + d)
+    SenSpe[,i] = c(sen, spe)
+}
+
+# plotting ROC
+plot(1-SenSpe[2,], SenSpe[1,], type ="l", xlim=c(0,1), ylim=c(0,1),
+     xlab = "1 - Specificity", ylab = "Sensitivity", lty = 1,
+     main = "ROC Curve for Neural Network Model", col = "blue")
+abline(0,1, lty = 2, col = "red")
+
+## Calculate AUC
+xx = 1-SenSpe[2,]
+yy = SenSpe[1,]
+width = xx[-length(xx)] - xx[-1]
+height = yy[-1]
+
+## A better approx of ROC, need library {pROC}
+  prediction = nn.results
+  category = trainData[,"yYes"] == 1
+  ROCobj <- roc(category, prediction)
+  AUC.neural = auc(ROCobj)[1]
+  ##
+###
+
+#AUC =mean(sum(width*height), sum(width*yy[-length(yy)]))
+text(0.8, 0.3, paste("AUC = ", round(AUC.neural,4)), col = "purple", cex = 0.9)
+legend("bottomright", c("ROC of the Model", "Random Guessing"), lty=c(1,2),
+       col = c("blue", "red"), bty = "n", cex = 0.8)
+```
+
+The above ROC curve indicates that the underlying neural network is better than the random guess since the area under the curve (AUC) is significantly greater than 0.5. Since the AUC is also significantly greater than 0.65, this means the predictive power of the underlying model is acceptable. Since the AUC for the neural network model ROC curve is less than that of the final logistic regression model, this model is not as good as the logistic regression model.
+
+# Modeling With Decision Tree Algorithms
+
+Now that two models, logistic regression and neural network, have been created, a final third predictive model, based on decision tree algorithms, will be made as well. Decision trees are based on conditional probabilities statements, known as rules, to identify certain sets of records to be used to make a prediction of the response for a new observation. It starts off from a root node, representing the whole data population or a sample. The decision tree grows from this root node by splitting into branches of decision sub-nodes, which continue to split into more, and leaf sub-nodes, which do not split further, of the data, using criteria defined by the feature variables. Predictive performance of a decision tree is dependent on the trained tree size. Small size causes underfitting of the model and large size causes overfitting. The Gini index and information entropy are two impurity measures used to control size of a decision for obtaining best performance. They also choose feature variables for defining root and decision nodes, as well as how to split the variables. Gini Index considers a split for each attribute and measures the impurity of subgroups split by a feature variable.
+
+Overall, decision trees are relatively easy to understand and are effective. They show all possible outcomes and give users the ability to analyze possible consequences of a decision. This gives users the ability to find the optimal model with the greatest predictive performance and the least amount of problems.
+
+At least 4 to 6 different decision trees will be initially constructed based on impurity measures (Gini index and information entropy), penalty coefficients, and costs of false negatives and positives. An ROC curve will once again be used to find the best decision tree model out of all of them. An optimal cut-off score will be found again from this through cross-validation for reporting predictive performance of the final model. 
+
+```{r fig.align='center', out.width="70%", fig.cap="Decision Tree Framework"}
+include_graphics("https://github.com/azheneghan/STA551Heneghan/blob/main/images/decisiontree.png?raw=true")
+```
+
+The original data set, with the re-categorized variables, will be used, separate from the logistic regression and neural network models. This, once again, will be split into a 70% data set for training the model and a 30% data set for testing the model.
+
+```{r}
+# Read in the data set again without the NN changes
+var.names = c("age", "day", "grp.job", "marital", "education", "housing", "loan", "contact", "grp.month", "grp.duration", "grp.campaign", "grp.pdays", "grp.previous", "y") 
+BankMarketingTrees = BankMarketing[, var.names]
+
+# Random split approach for new training and testing data sets
+n = dim(BankMarketingTrees)[1]  # sample size
+# caution: using without replacement
+id.train = sample(1:n, round(0.7*n), replace = FALSE)  
+train = BankMarketingTrees[id.train, ]    # training data
+test = BankMarketingTrees[-id.train, ]    # testing data
+```
+
+## Building Decision Trees With Purposes
+
+```{r}
+# Defining different tree models using the rpart() function
+tree.builder = function(in.data, fp, fn, purity){
+   tree = rpart(y ~ .,                # including all feature variables
+                data = in.data, 
+                na.action  = na.rpart,       # By default, deleted if the outcome is missing, 
+                method = "class",            # Classification form factor
+                model  = TRUE,
+                x = FALSE,
+                y = TRUE,
+            parms = list( # Penalizes false positives or negatives more heavily
+                loss = matrix(c(0, fp, fn, 0), ncol = 2, byrow = TRUE),   
+                split = purity),          # Gini index or information entropy
+             ## rpart algorithm options start here
+             control = rpart.control(
+                        minsplit = 10,  # minimum number of observations required before split
+                        minbucket= 10,  # minimum number of observations in any terminal node
+                        cp  = 0.01,  # complexity parameter for stopping rule
+                        maxcompete  = 5,     # number of competitor splits retained in the output
+                        maxsurrogate   = 6,  # number of surrogate splits retained in the output
+                        maxdepth = 5,
+                        xval = 10     # number of cross-validation )
+                        )
+             )
+  }
+```
+
+A wrapper will be implemented, using an R function, in order to pass arguments of impurity and penalty measures, as well as costs of false positives and negatives, to construct different decision trees. This function will help define six different initial decision tree models:
+
+Model 1: gini.tree.11 is based on the Gini index without penalizing false positives and false negatives.
+
+Model 2: info.tree.11 is based on entropy without penalizing false positives and false negatives.
+
+Model 3: gini.tree.110 is based on the Gini index: cost of false negatives is 10 times the positives.
+
+Model 4: info.tree.110 is based on entropy: cost of false negatives is 10 times the positives.
+
+Model 5: gini.tree.101 is based on the Gini index: cost of false positive is 10 times the negatives.
+
+Model 6: info.tree.101 is based on entropy: cost of false positive is 10 times the negatives.
+
+```{r}
+## Statements to recall the tree model wrapper
+gini.tree.1.1 = tree.builder(in.data = train, fp = 1, fn = 1, purity = "gini")
+info.tree.1.1 = tree.builder(in.data = train, fp = 1, fn = 1, purity = "information")
+gini.tree.1.10 = tree.builder(in.data = train, fp = 1, fn = 10, purity = "gini")
+info.tree.1.10 = tree.builder(in.data = train, fp = 1, fn = 10, purity = "information")
+gini.tree.10.1 = tree.builder(in.data = train, fp = 10, fn = 1, purity = "gini")
+info.tree.10.1 = tree.builder(in.data = train, fp = 10, fn = 1, purity = "information")
+```
+
+Call statements will be used to fit parameters into the tree model wrapper that was just created with the above code, allowing the creation of several different tree models. 
+
+It appears, however, that the two non-penalized models will not run properly for the analysis and produce full models. This is because the cost of false negatives is significantly different from the cost of false positives. Due to the nature of this data set, any tree model created must have penalty measures to account for this difference in costs. 
+
+The first two plots given here show the two penalized decision models where cost of false negative is 10 times the positives.
+
+```{r fig.align='center', fig.width=10, fig.height=5, fig.cap="Figure 29: Penalized decision tree models when cost of false negatives is 10 times the positives using Gini index (left) and entropy (right)."}
+## Plotting the tree plots
+par(mfrow=c(1,2))
+rpart.plot(gini.tree.1.10, main = "Tree with Gini Index: Penalization")
+rpart.plot(info.tree.1.10, main = "Tree with Entropy: Penalization")
+```
+
+Unfortunately, it seems the last two penalized decision models where cost of false positive is 10 times the negatives will also not run properly for the analysis or produce full models. This could be due to the built-in stopping rule. It may indicate, based on penalizing weights, no significant information gain for any plotting beyond the root node. It could also be the default controls are too restrict for your case. Many attempts, however, have been done to change the controls to make these two models work, but nothing worked. Therefore, it would be better to focus on just the two models of false negatives for this analysis.
+
+## ROC for Final Decision Tree Model Selection
+
+Now that the two decision trees have been created, the ROCs of both these curves, and their AUCs, will now be used to select the optimal decision tree model of the two to compare with the other two models in the previous sections. A new function will be used to build 2 different trees and plot their corresponding ROC curves, and calculate the AUCs for each, so we can see the global performance of these tree algorithms.
+
+```{r fig.align='center', fig.width=5, fig.height=5, fig.cap="Figure 30: ROC Curves for the 2 Decision Tree Models"}
+## Creating a function for returning a sensitivity and specificity matrix
+SensSpec = function(in.data, fp, fn, purity){
+  cutoff = seq(0,1, length = 20)   # 20 cut-offs including 0 and 1. 
+  model = tree.builder(in.data, fp, fn, purity) 
+  
+  ## Decision trees return both "success" and "failure" probabilities, but we need only "success" probability to define sensitivity and specificity 
+  pred = predict(model, newdata = in.data, type = "prob") # two-column matrix.
+  senspe.mtx = matrix(0, ncol = length(cutoff), nrow= 2, byrow = FALSE)
+  for (i in 1:length(cutoff)){
+    
+  # The following line uses only " yes" probability: pred[, " yes"]
+  pred.out =  ifelse(pred[," yes"] >= cutoff[i], " yes", " no")  
+  TP = sum(pred.out ==" yes" & in.data$y == " yes")
+  TN = sum(pred.out ==" no" & in.data$y == " no")
+  FP = sum(pred.out ==" yes" & in.data$y == " no")
+  FN = sum(pred.out ==" no" & in.data$y == " yes")
+  senspe.mtx[1,i] = TP/(TP + FN)
+  senspe.mtx[2,i] = TN/(TN + FP)
+  }
+  ## A better approx of ROC, need library {pROC}
+  prediction = pred[, " yes"]
+  category = in.data$y == " yes"
+  ROCobj <- roc(category, prediction)
+  AUC.tree = auc(ROCobj)
+  ##
+  list(senspe.mtx= senspe.mtx, AUC.tree = round(AUC.tree,4))
+ }
+
+#Building the six tree models
+giniROC110 = SensSpec(in.data = train, fp=1, fn=10, purity="gini")
+infoROC110 = SensSpec(in.data = train, fp=1, fn=10, purity="information")
+
+# Creating the ROC curves for both models
+par(pty="s")      # set up square plot through graphic parameter
+plot(1-giniROC110$senspe.mtx[2,], giniROC110$senspe.mtx[1,], type = "l", xlim=c(0,1), ylim=c(0,1), 
+     xlab="1 - Specificity: FPR", ylab="Sensitivity: TPR", col = "green2", lwd = 2,
+     main="ROC Curves of Decision Tree Models", cex.main = 0.9, col.main = "blue")
+abline(0,1, lty = 2, col = "red", lwd = 2)
+lines(1-infoROC110$senspe.mtx[2,], infoROC110$senspe.mtx[1,], col = "deeppink", lwd = 2)
+
+legend("bottomright", c(paste("gini.1.10, AUC =",giniROC110$AUC.tree), paste("info.1.10, AUC =",infoROC110$AUC.tree)), col=c("green2","deeppink"), lty=c(1,2,rep(1,4)), lwd=rep(2,6), cex = 0.6, bty = "n")
+```
+
+The above ROC curves represent the two decision trees for the penalized models with false negatives and their corresponding AUCs. They indicate that the underlying predictive models are both better than the random guess since the area under the curve (AUC) is significantly greater than 0.5 for all curves. Since all these AUCs are also significantly greater than 0.65, this means the predictive power of all three underlying models is acceptable.
+
+The Gini index model will be the final model used for finding the optimal cut-off probability for predictive modeling since it has the largest AUC out of the two curves most of the time, even though they are similar the rest of the time. It seems to have a smaller AUC compared to the ROC curves of the other two models, suggesting this model is worse compared to them.
+
+## Final Decision Tree Model Optimal Cut-Off Score Determination
+
+With the final decision tree model established, the optimal cut-off score must be determined for reporting predictive performance. This will be done using the test data and cross-validation based on the training data set. 
+
+Of course, when making different decision tree models, one may end up with 2 or more models having similar AUCs. To counteract this, a function will be written to determine optimal cut-off for each of the 2 given decision trees (based on this project) since different trees have their own optimal cut-off. The average of the cut-offs for both models will be used for predictive performance. 
+
+```{r fig.align='center', fig.cap="Figure 31: Optimal Cut-Off Probabilities for the 2 Decision Tree Models"}
+optm.cutoff = function(in.data, fp, fn, purity){
+  n0 = dim(in.data)[1]/5
+  cutoff = seq(0,1, length = 20)               # candidate cut off prob
+  ## accuracy for each candidate cut-off
+  accuracy.mtx = matrix(0, ncol=20, nrow=5)    # 20 candidate cutoffs and gini.11
+  ##
+  for (k in 1:5){
+     valid.id = ((k-1)*n0 + 1):(k*n0)
+     valid.dat = in.data[valid.id,]
+     train.dat = in.data[-valid.id,] 
+     ## tree model
+     tree.model = tree.builder(in.data, fp, fn, purity)
+     ## prediction 
+     pred = predict(tree.model, newdata = valid.dat, type = "prob")[,2]
+     ## for-loop
+     for (i in 1:20){
+        ## predicted probabilities
+        pc.1 = ifelse(pred > cutoff[i], " yes", " no")
+        ## accuracy
+        a1 = mean(pc.1 == valid.dat$y)
+        accuracy.mtx[k,i] = a1
+       }
+      }
+   avg.acc = apply(accuracy.mtx, 2, mean)
+   ## plots
+   n = length(avg.acc)
+   idx = which(avg.acc == max(avg.acc))
+   tick.label = as.character(round(cutoff,2))
+   ##
+   plot(1:n, avg.acc, xlab="cut-off score", ylab="average accuracy", 
+        ylim=c(min(avg.acc), 1), 
+        axes = FALSE,
+        main=paste("5-fold CV optimal cut-off \n ",purity,"(fp, fn) = (", fp, ",", fn,")" , collapse = ""),
+        cex.main = 0.9,
+        col.main = "navy")
+        axis(1, at=1:20, label = tick.label, las = 2)
+        axis(2)
+        points(idx, avg.acc[idx], pch=19, col = "red")
+        segments(idx , min(avg.acc), idx , avg.acc[idx ], col = "red")
+       text(idx, avg.acc[idx]+0.03, as.character(round(avg.acc[idx],4)), col = "red", cex = 0.8) 
+   }
+
+par(mfrow=c(1,2))
+optm.cutoff(in.data = train, fp=1, fn=10, purity="gini")
+optm.cutoff(in.data = train, fp=1, fn=10, purity="information")
+```
+
+The above figure indicates that the optimal cut-off probabilities for the Gini index (left) and entropy (right) models are relatively the same in range. Therefore, I believe the optimal average cut-off probability that yields the best accuracy for the final Gini index model is around 0.74.
+
+## Discussion of Decision Tree Models
+
+Overall, out of the six initial decision tree models, only the two false negative models ended up being usable for predictive modeling. The cost of false negatives was significantly different from the cost of false positives, so all the tree models created needed to have penalty measures to account for these differences. This resulted in both non-penalized models failing. The false positive models also appear to have no significant information gain for any plotting, probably due to the built-in stopping rule. The default controls could also be to blame if they were still too restricted.
+
+The penalized Gini index model where the cost of false negatives is 10 times the positives proved to be the best model out of all the decision tree models. This was due in part to its ROC curve having a greater AUC than for the other false negatives model with information entropy. The average optimal cut-off probability for this final tree model is 0.74, which can be used to assess model performance and accuracy in the future.
+
+# Conclusion
+
+Overall, the data seemed to function better for modeling with the variables balance, default, and poutcome removed and the variables duration, campaign, pdays, previous, job, and month re-categorized. Out of the three logistic regression models, the final model, existing between the full and reduced models, appeared to be the best of the three since its AUC was the highest among these models. The final model does contain all the variables that were in the full model, so it is the same. It is uncertain whether a third, different model existed that was better than the final model. Both this model and the neural network model appear to have strong accuracy in predicting clients subscribing a term deposit. The Gini index decision tree was the best of the two tree models since its AUC was the bigger of the two for the ROC curves. It was planned that there would be four more, but the two non-penalized models did not work since  the cost of false negatives is significantly different from the cost of false positives. The two false positive models did not work either due to the built-in stopping rule and no significant information gain from plotting.
+
+```{r fig.align='center', fig.width=5, fig.height=5, fig.cap="Figure 32: ROC Curves for the Final 3 Predictive Models"}
+# Plotting the three best ROC curves
+plot(1-SenSpe[2,], SenSpe[1,], type ="l", xlim=c(0,1), ylim=c(0,1), xlab = "1 - Specificity", ylab = "Sensitivity", lty = 1, main = "ROC Curves of the Three Best Models", col = "purple")
+abline(0,1, lty = 2, col = "red")
+lines(one.minus.spec.final, sens.vec.final, col = "orange")
+lines(1-giniROC110$senspe.mtx[2,], giniROC110$senspe.mtx[1,], col = "green2", lwd = 2)
+
+## Calculate AUCs for all 3 curves
+text(0.8, 0.4, paste("AUC = ", round(AUC.neural,4)), col = "purple", cex = 0.9)
+AUC.final = round(sum(sens.vec.final*(one.minus.spec.final[-101]-one.minus.spec.final[-1])),4)
+text(0.8, 0.5, paste("AUC = ", round(AUC.final,4)), col = "orange", cex = 0.9)
+text(0.8, 0.3, paste("AUC = ", round(giniROC110$AUC.tree,4)), col = "green2", cex = 0.9)
+
+# Adding a legend to the figure
+legend("bottomright", c("ROC of Final Logisitc Regression Model", "ROC of Neural Network Model", "ROC of Final Deision Tree Model", "Random Guessing"), lty=c(1,2), col = c("orange", "purple", "green2", "red", ""), bty = "n", cex = 0.8)
+```
+
+Comparing the ROC curves of the final logistic regression, neural network, and final decision tree models, all of them are better than the random guess and the predictive powers for these underlying models are all acceptable. The AUC for the final logistic regression model ROC, however, is significantly larger than that of the other two models. Therefore, the final logistic regression model has a better predictive performance than the other two and is the best model to use for predictive modeling of the data set out of the three. This model can be used by the Portuguese banking institution, and maybe other institutions as well, to predict whether clients, old or new, will subscribe a term deposit using the same variables used in the data set.

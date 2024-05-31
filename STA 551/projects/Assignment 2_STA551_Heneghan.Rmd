@@ -1,0 +1,363 @@
+---
+title: "Predicting Banking Institution Clients Subscribing a Term Deposit After Direct Marketing Campaigns"
+author: "Andrew Heneghan"
+date: "7/13/2023"
+output:
+  html_document: 
+    toc: yes
+    toc_float: true
+    toc_depth: 4
+    fig_width: 6
+    fig_height: 4
+    fig_caption: yes
+    number_sections: yes
+    theme: readable
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document:
+    toc: yes
+    keep_tex: false
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: yes
+    fig_width: 5
+    fig_height: 4
+---
+
+```{=html}
+<style type="text/css">
+/* Cascading Style Sheets (CSS) is a stylesheet language used to
+describe the presentation of a document written in HTML or XML. it is
+a simple mechanism for adding style (e.g., fonts, colors, spacing) to
+Web documents. */
+h1.title { /* Title - font specifications of the report title */
+ font-size: 24px;
+ color: DarkRed;
+ text-align: center;
+ font-family: "Gill Sans", sans-serif;
+}
+h4.author { /* Header 4 - font specifications for authors */
+ font-size: 20px;
+ font-family: system-ui;
+ color: DarkRed;
+ text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date */
+ font-size: 18px;
+ font-family: system-ui;
+ color: DarkBlue;
+ text-align: center;
+}
+h1 { /* Header 1 - font specifications for level 1 section title */
+ font-size: 22px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: center;
+}
+h2 { /* Header 2 - font specifications for level 2 section title */
+ font-size: 20px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: left;
+}
+h3 { /* Header 3 - font specifications of level 3 section title */
+ font-size: 18px;
+ font-family: "Times New Roman", Times, serif;
+ color: navy;
+ text-align: left;
+}
+h4 { /* Header 4 - font specifications of level 4 section title */
+ font-size: 18px;
+ font-family: "Times New Roman", Times, serif;
+ color: darkred;
+ text-align: left;
+}
+body { background-color:white; }
+.highlightme { background-color:yellow; }
+p { background-color:white; }
+</style>
+```
+
+```{r setup, include=FALSE}
+# code chunk specifies whether the R code, warnings, and output
+# will be included in the output files.
+if (!require("knitr")) {
+ install.packages("knitr")
+ library(knitr)
+}
+if (!require("MASS")) {
+ install.packages("MASS")
+ library(MASS)
+}
+if (!require("leaflet")) {
+ install.packages("leaflet")
+ library(leaflet)
+}
+if (!require("factoextra")) {
+ install.packages("factoextra")
+ library(factoextra)
+}
+if (!require("webshot")) {
+ install.packages("webshot")
+ library(webshot)
+}
+if (!require("TSstudio")) {
+ install.packages("TSstudio")
+ library(TSstudio)
+}
+if (!require("plotrix")) {
+ install.packages("plotrix")
+library(plotrix)
+}
+if (!require("ggridges")) {
+ install.packages("ggridges")
+library(ggridges)
+}
+if (!require("tidyverse")) {
+ install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+ install.packages("GGally")
+library(GGally)
+}
+knitr::opts_chunk$set(echo = TRUE, # include code chunk in the
+ # output file
+ warnings = FALSE, # sometimes, you code may
+ # produce warning messages,
+# you can choose to include
+# the warning messages in
+ # the output file.
+ results = TRUE, # you can also decide whether
+ # to include the output
+# in the output file.
+ message = FALSE
+)
+```
+
+# Bank Direct Marketing Data Set Description
+
+The data used for this study comes from direct marketing campaigns of a Portuguese banking institution. These marketing campaigns were based on phone calls, and often, more than one contact was required to the same client to access if the term deposit was subscribed. The data is ordered by date, from May 2008 to November 2010. The data was found at the UC Irvine Machine Learning Repository.
+
+The overall goal of this study is to predict if a client will subscribe to a term deposit after direct marketing campaigns of a Portuguese banking institution. 
+
+There is a total number of 45,211 client records in this data set. The data set consists of 17 variables, including the response variable with the name 'y'. A detailed description of the predictor and outcome variables are given below:
+
+1 - age (numeric)
+
+2 - job : Job type (categorical): "admin.", "unknown", "unemployed", "management", "housemaid",        "entrepreneur", "student", "blue-collar", "self-employed", "retired", "technician", "services"
+
+3 - marital : Marital status (categorical): "married", "divorced", "single"
+  note: "divorced" means divorced or widowed
+  
+4 - education (categorical): "unknown","secondary","primary","tertiary"
+
+5 - default: Does the client have credit in default? (binary: "yes","no")
+
+6 - balance: Average yearly balance (numeric, in euros)
+
+7 - housing: Does the client have a housing loan? (binary: "yes","no")
+
+8 - loan: Does the client have a personal loan? (binary: "yes","no")
+
+9 - contact: Contact communication type (categorical): "unknown","telephone","cellular"
+
+10 - day: Last contact day of the month (numeric, discrete)
+
+11 - month: Last contact month of year (categorical): "jan", "feb", "mar", "apr", "may", "jun", "jul",  "aug", "sep", "oct", "nov", "dec"
+
+12 - duration: Last contact duration (numeric, in seconds)
+
+13 - campaign: The number of contacts performed during this campaign and for this client (numeric, discrete)
+
+14 - pdays: The number of days after the client was last contacted from a previous campaign (numeric, discrete)    note: -1 means client was not previously contacted
+
+15 - previous: The number of contacts performed before this campaign and for this client (numeric)
+
+16 - poutcome: The outcome of the previous marketing campaign (categorical): "unknown", "other",          "failure", "success"
+
+17 - y oOutcome class variable): Has the client subscribed a term deposit? (binary: "yes","no")
+
+A copy of this publicly available data is stored at: https://archive.ics.uci.edu/dataset/222/bank+marketing
+
+```{r}
+# Loading in the data set
+BankMarketing = read.csv("https://pengdsci.github.io/datasets/BankMarketing/BankMarketingCSV.csv")[, -1]
+```
+
+# Exploratory Data Analysis for Feature Engineering
+
+Exploratory data analysis (EDA) for Feature Engineering will be done to look at the distribution of variables and observe patterns. Changes will be made to the variables based off the results, and these fixed variables will be used for future modeling. 
+
+First, the entire data set will be scanned to determine the EDA tools to use for feature engineering. Then, if there is missing values, the data will be imputted. Afterwards, if numeric or categorical variables are skewed, they will be discretized, where there values are split into new groups or categories. These new variables will be used in future modeling instead of the original variables. A final data set will then be created using these transformed variables. 
+
+Finally, with this fixed data set, linear association and correlation between numeric variables, as well as dependency on the response variable for categorical variables, will be investigated. 
+
+Let's begin by looking at a few descriptive statistics for every variable in the data set.
+
+```{r}
+#Summarized descriptive statistics for all variables in the data set
+summary(BankMarketing)
+```
+
+It can be observed from the above summary table that the distribution of some numeric variables is skewed and contains outliers. 
+
+## Missing Values of the Data Set
+
+There appears to be no missing values in this data set. Therefore, there is no need to use any methods regarding the imputation or deletion of missing values.
+
+## Assessing Distributions of the Variables
+
+Now, we will look at possibly discretizing the numeric variables, both continuous and discrete, and the categorical variables of the study.
+
+### Discretizing Continuous Variables
+
+To deal with the outliers and skewness of certain numerical variables, such as duration of the last contact, shown in the histogram below, discretization will be used to divide the different values into groups. This variable should be discretized due to the great number of high outliers, which in turn leads to great skewness. In looking at this variable's distribution, the three groups that were created (0-180, 181-319, and 320+) seem similar enough in the frequency of client observations. This variable will be used for future models.
+
+```{r fig.align='center'}
+# histogram showing the distribution of the duration variable
+hist(BankMarketing$duration, xlab = "Duration", ylab = "count", main = "Durations of Last Contact")
+```
+
+```{r}
+# New grouping variable for duration
+BankMarketing$grp.duration <- ifelse(BankMarketing$duration <= 180, '0-180',
+               ifelse(BankMarketing$duration >= 320, '320+', '[181, 319]'))
+```
+
+### Grouping Categories for Discrete Numeric Varaibles
+
+Now, let's look at bar plots for and discretize three discrete numerical variables: campaign, pdays, and previous.
+
+```{r fig.align='center'}
+# barplot showing the distribution of the campaign variable
+marketcampaigns = table(BankMarketing$campaign)
+barplot(marketcampaigns, main = "Distribution of Contacts Performed During Campaign", xlab = "Number of Contacts")
+```
+
+```{r fig.align='center'}
+# barplot showing the distribution of the pdays variable
+dayspassed = table(BankMarketing$pdays)
+barplot(dayspassed, main = "Distribution of Days Passed After Client Last Contacted From Previous Campaign", xlab = "Number of Days")
+```
+
+```{r fig.align='center'}
+# barplot showing the distribution of the previous variable
+prev = table(BankMarketing$previous)
+barplot(prev, main = "Distribution of Number of Contacts Performed Before This Campaign and for This Client", xlab = "Number of Contacts")
+```
+
+Overall, the bar plots are greatly skewed and/or weighted for certain values, so category groups should be made for each variable. 
+
+For campaign, the value of 1 contact should be its own group since it has the highest frequency of observations. The Values of 2 and 3 contacts combined have a similar frequency, so this should be a second group. The rest of the observations from 4 contacts and up together act as a third group since they more or less add up to a similar frequency as the first two groups. 
+As for pdays, the value of -1 for this variable acts as an indicator that a client was not previously contacted. Due to this fact, and the fact that it makes up most of the observations as well, this will be its own group. The rest of the observations were split into groups of 1-200 days and 200 days or more. The value of 200 seemed like a decent splitting point due to how the distribution looked on the bar plot.
+The previous variable was also split into 3 groups. The value of 0 contacts is one group since it has the most observations. The values of 1 to 3 contacts is another category since they both make a fair amount of the observations. Same goes for observations with 4 or more contacts.
+
+These grouped variables will be used in subsequent modeling. The categories for each variable are as follows:
+
+campaign: 1, 2-3, 4+
+pdays: -1, 1-199, 200+
+previous: 0, 1-3, 4+
+
+```{r fig.align='center'}
+# New grouping variable for month
+BankMarketing$grp.campaign <- ifelse(BankMarketing$campaign <= 1, '1',
+               ifelse(BankMarketing$campaign >= 4, '4+', '[2, 3]'))
+
+# New grouping variable for pdays
+BankMarketing$grp.pdays <- ifelse(BankMarketing$pdays <= -1, 'Client Not Previously Contacted', ifelse(BankMarketing$pdays >= 200, '200+', '[1, 199]'))
+
+# New grouping variable for previous
+BankMarketing$grp.previous <- ifelse(BankMarketing$previous <= 0, '0',
+               ifelse(BankMarketing$previous > 4, '4+', '[1,3]'))
+```
+
+### Making New Groups for Categorical Variables
+
+The categorical variable of month has also been discretized by seasons instead of months since this bar plot is also skewed for certain months. It seems that more clients were last contacted during the warmer seasons like spring or summer compared to colder ones. Hopefully, this will balance out the skewness caused by the different seasons.
+
+```{r fig.align='center'}
+# barplot showing the distribution of the month variable
+seasons = table(BankMarketing$month)
+barplot(seasons, main = "Distribution of Number of Contacts Performed Before This Campaign and for This Client", xlab = "Number of Contacts")
+```
+
+This new grouping variable will also be used for future modeling:
+
+month: mar-may (spring), jun-aug (summer), sep-nov (fall), dec-feb (winter)
+
+```{r}
+# New grouping variable for month
+BankMarketing$grp.month <-  ifelse((BankMarketing$month == 'mar' | BankMarketing$month == 'apr' | BankMarketing$month == 'may'), 'spring',
+                            ifelse((BankMarketing$month == 'jun' | BankMarketing$month == 'jul' | BankMarketing$month == 'aug'), 'summer', 
+                            ifelse((BankMarketing$month == 'sep' | BankMarketing$month == 'oct' | BankMarketing$month == 'nov'), 'fall', 'winter')))
+```
+
+## Assembling the New Data Set
+
+Now that the variables have been discretized, those newly discretized variables will be kept for use in subsequent modeling instead of the original versions.
+
+```{r}
+# Assembling the discretized variables and other vriables to make the modeling data set
+var.names = c("age", "balance", "day", "job", "marital", "education", "default", "housing", "loan", "contact", "grp.month", "grp.duration", "grp.campaign", "grp.pdays", "grp.previous", "poutcome", "y") 
+BankMarketingCampaign = BankMarketing[, var.names]
+```
+
+## Pairwise Associations
+
+It is time to look at association between numeric variables and dependency of categorical variables to the response.
+
+### Correlation of Numerical Variables
+
+A pair-wise scatter plot is used for assessing pairwise linear association between two numeric variables at a time.
+
+```{r fig.align='center', fig.width=8, fig.height=8}
+# Pair-wise scatter plot for numeric variables
+ggpairs(BankMarketingCampaign,  # Data frame
+        columns = 1:3,  # Columns
+        aes(color = y,  # Color by group (cat. variable)
+            alpha = 0.5))
+```
+
+The off-diagonal plots and numbers indicate the correlation between was weak and not what was expected, None of the numerical variables appear to be significantly correlated to each other.
+
+Since the stacked density curves are mostly but not completely overlapped, this means there is correlation between each of these numeric variables and the response variable (y), but it's not a lot.
+
+There is almost no correlation between day and the other variables, but there is a somewhat better correlation between age and balance, even though it is still very weak.
+
+### Dependency of Categorical Variables
+
+These mosaic plots help show whether clients subscribing a term deposit is independent of the categorical variables. Variables that are independent should be excluded in future models.
+
+```{r fig.align='center', fig.width=6, fig.height=8}
+# Mosaic plots to show categorical variable dependency to the response.
+par(mfrow = c(2,2))
+mosaicplot(job ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="job vs term deposit subscription")
+mosaicplot(marital ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="marital vs term deposit subscription")
+mosaicplot(education ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="education vs term deposit subscription")
+mosaicplot(default ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="default vs term deposit subscription")
+```
+
+```{r fig.align='center', fig.width=6, fig.height=8}
+# Mosaic plots to show categorical variable dependency to the response.
+par(mfrow = c(2,2))
+mosaicplot(housing ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="housing vs term deposit subscription")
+mosaicplot(loan ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="loan vs term deposit subscription")
+mosaicplot(contact ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="contact vs term deposit subscription")
+mosaicplot(grp.month ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="month vs term deposit subscription")
+```
+
+```{r fig.align='center', fig.width=6, fig.height=8}
+# Mosaic plots to show categorical variable dependency to the response.
+par(mfrow = c(3,2))
+mosaicplot(grp.duration ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="duration vs term deposit subscription")
+mosaicplot(grp.campaign ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="campaign vs term deposit subscription")
+mosaicplot(grp.pdays ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="pdays vs term deposit subscription")
+mosaicplot(grp.previous ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="previous vs term deposit subscription")
+mosaicplot(poutcome ~ y, data=BankMarketingCampaign,col=c("Blue","Red"), main="poutcome vs term deposit subscription")
+```
+
+The mosaic plots for contact, pdays, and education show negative sasociation between contact communication type, client education, and number of days passed after the client was last contacted from a previous campaign. The rest of these mosaic plots show that whether the client subscribed a term deposit is not independent of times of these variables because the proportion of subscription cases in individual categories is not identical. None of these variables will be excluded from future modeling.
