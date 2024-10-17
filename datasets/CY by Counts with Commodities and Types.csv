@@ -1,0 +1,196 @@
+CY,Mine Type (Mines),Primary Canvass Code,Count (Mine ID)
+2013,Facility,Coal,62 
+2013,Facility,Coal,384 
+2013,Facility,SandAndGravel,27 
+2013,Facility,Stone,219 
+2013,Facility,Nonmetal,138 
+2013,Facility,Metal,43 
+2013,Surface,Coal,71 
+2013,Surface,Coal,758 
+2013,Surface,SandAndGravel,"6,426 "
+2013,Surface,Stone,"4,059 "
+2013,Surface,Nonmetal,726 
+2013,Surface,Metal,206 
+2013,Underground,Coal,14 
+2013,Underground,Coal,411 
+2013,Underground,Stone,115 
+2013,Underground,Nonmetal,41 
+2013,Underground,Metal,105 
+2014,Facility,Coal,61 
+2014,Facility,Coal,372 
+2014,Facility,SandAndGravel,28 
+2014,Facility,Stone,218 
+2014,Facility,Nonmetal,134 
+2014,Facility,Metal,42 
+2014,Surface,Coal,72 
+2014,Surface,Coal,739 
+2014,Surface,SandAndGravel,"6,337 "
+2014,Surface,Stone,"4,027 "
+2014,Surface,Nonmetal,745 
+2014,Surface,Metal,210 
+2014,Underground,Coal,9 
+2014,Underground,Coal,376 
+2014,Underground,Stone,117 
+2014,Underground,Nonmetal,40 
+2014,Underground,Metal,96 
+2015,Facility,Coal,62 
+2015,Facility,Coal,331 
+2015,Facility,SandAndGravel,27 
+2015,Facility,Stone,215 
+2015,Facility,Nonmetal,137 
+2015,Facility,Metal,39 
+2015,Surface,Coal,64 
+2015,Surface,Coal,650 
+2015,Surface,SandAndGravel,"6,268 "
+2015,Surface,Stone,"3,992 "
+2015,Surface,Nonmetal,757 
+2015,Surface,Metal,190 
+2015,Underground,Coal,8 
+2015,Underground,Coal,340 
+2015,Underground,Stone,115 
+2015,Underground,Nonmetal,40 
+2015,Underground,Metal,88 
+2016,Facility,Coal,54 
+2016,Facility,Coal,305 
+2016,Facility,SandAndGravel,29 
+2016,Facility,Stone,211 
+2016,Facility,Nonmetal,135 
+2016,Facility,Metal,36 
+2016,Surface,Coal,63 
+2016,Surface,Coal,568 
+2016,Surface,SandAndGravel,"6,256 "
+2016,Surface,Stone,"3,990 "
+2016,Surface,Nonmetal,736 
+2016,Surface,Metal,191 
+2016,Surface,Undetermined,3 
+2016,Underground,Coal,9 
+2016,Underground,Coal,287 
+2016,Underground,Stone,117 
+2016,Underground,Nonmetal,40 
+2016,Underground,Metal,80 
+2017,Facility,Coal,54 
+2017,Facility,Coal,289 
+2017,Facility,SandAndGravel,26 
+2017,Facility,Stone,207 
+2017,Facility,Nonmetal,134 
+2017,Facility,Metal,35 
+2017,Surface,Coal,61 
+2017,Surface,Coal,543 
+2017,Surface,SandAndGravel,"6,255 "
+2017,Surface,Stone,"4,067 "
+2017,Surface,Nonmetal,753 
+2017,Surface,Metal,182 
+2017,Surface,Undetermined,7 
+2017,Underground,Coal,9 
+2017,Underground,Coal,258 
+2017,Underground,Stone,117 
+2017,Underground,Nonmetal,39 
+2017,Underground,Metal,79 
+2018,Facility,Coal,54 
+2018,Facility,Coal,277 
+2018,Facility,SandAndGravel,24 
+2018,Facility,Stone,190 
+2018,Facility,Nonmetal,132 
+2018,Facility,Metal,35 
+2018,Surface,Coal,61 
+2018,Surface,Coal,537 
+2018,Surface,SandAndGravel,"6,252 "
+2018,Surface,Stone,"4,094 "
+2018,Surface,Nonmetal,743 
+2018,Surface,Metal,179 
+2018,Surface,Undetermined,7 
+2018,Underground,Coal,9 
+2018,Underground,Coal,251 
+2018,Underground,Stone,115 
+2018,Underground,Nonmetal,39 
+2018,Underground,Metal,80 
+2019,Facility,Coal,52 
+2019,Facility,Coal,260 
+2019,Facility,SandAndGravel,26 
+2019,Facility,Stone,179 
+2019,Facility,Nonmetal,131 
+2019,Facility,Metal,36 
+2019,Surface,Coal,59 
+2019,Surface,Coal,510 
+2019,Surface,SandAndGravel,"6,231 "
+2019,Surface,Stone,"4,086 "
+2019,Surface,Nonmetal,763 
+2019,Surface,Metal,168 
+2019,Surface,Undetermined,7 
+2019,Underground,Coal,9 
+2019,Underground,Coal,246 
+2019,Underground,Stone,112 
+2019,Underground,Nonmetal,38 
+2019,Underground,Metal,84 
+2020,Facility,Coal,46 
+2020,Facility,Coal,242 
+2020,Facility,SandAndGravel,27 
+2020,Facility,Stone,175 
+2020,Facility,Nonmetal,129 
+2020,Facility,Metal,32 
+2020,Surface,Coal,55 
+2020,Surface,Coal,440 
+2020,Surface,SandAndGravel,"6,205 "
+2020,Surface,Stone,"4,036 "
+2020,Surface,Nonmetal,733 
+2020,Surface,Metal,161 
+2020,Surface,Undetermined,7 
+2020,Underground,Coal,9 
+2020,Underground,Coal,223 
+2020,Underground,Stone,111 
+2020,Underground,Nonmetal,40 
+2020,Underground,Metal,85 
+2021,Facility,Coal,46 
+2021,Facility,Coal,243 
+2021,Facility,SandAndGravel,26 
+2021,Facility,Stone,177 
+2021,Facility,Nonmetal,121 
+2021,Facility,Metal,30 
+2021,Surface,Coal,59 
+2021,Surface,Coal,411 
+2021,Surface,SandAndGravel,"6,170 "
+2021,Surface,Stone,"4,010 "
+2021,Surface,Nonmetal,707 
+2021,Surface,Metal,157 
+2021,Surface,Undetermined,7 
+2021,Underground,Coal,9 
+2021,Underground,Coal,203 
+2021,Underground,Stone,113 
+2021,Underground,Nonmetal,37 
+2021,Underground,Metal,83 
+2022,Facility,Coal,43 
+2022,Facility,Coal,247 
+2022,Facility,SandAndGravel,25 
+2022,Facility,Stone,173 
+2022,Facility,Nonmetal,120 
+2022,Facility,Metal,34 
+2022,Surface,Coal,57 
+2022,Surface,Coal,427 
+2022,Surface,SandAndGravel,"6,135 "
+2022,Surface,Stone,"4,015 "
+2022,Surface,Nonmetal,707 
+2022,Surface,Metal,160 
+2022,Surface,Undetermined,7 
+2022,Underground,Coal,7 
+2022,Underground,Coal,210 
+2022,Underground,Stone,113 
+2022,Underground,Nonmetal,37 
+2022,Underground,Metal,87 
+2023,Facility,Coal,42 
+2023,Facility,Coal,245 
+2023,Facility,SandAndGravel,21 
+2023,Facility,Stone,176 
+2023,Facility,Nonmetal,124 
+2023,Facility,Metal,31 
+2023,Surface,Coal,63 
+2023,Surface,Coal,421 
+2023,Surface,SandAndGravel,"6,186 "
+2023,Surface,Stone,"4,001 "
+2023,Surface,Nonmetal,710 
+2023,Surface,Metal,160 
+2023,Surface,Undetermined,6 
+2023,Underground,Coal,7 
+2023,Underground,Coal,216 
+2023,Underground,Stone,114 
+2023,Underground,Nonmetal,36 
+2023,Underground,Metal,81 
